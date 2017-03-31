@@ -28,31 +28,49 @@ fn main() {
     // let macros = Arc::new(RwLock::new(HashSet::new()));
     let outdir = env::var("OUT_DIR").unwrap();
 
+    generate_ble(&outdir);
+}
+
+fn generate_ble(outdir: &String) {
     let bindings = Builder::default()
         .no_unstable_rust()
         .use_core()
         .generate_inline_functions(true)
         .ctypes_prefix("ctypes")
-        // .enable_cxx_namespaces()
-        // .raw_line("pub use self::root::*;")
-        .header("../nrf5_sdk/components/softdevice/s132/headers/ble.h")
+
+        .header("bindings.h")
+
+        // Defines
         .clang_arg("-DNRF52832_XXAA")
-        .clang_arg("-DSVCALL_AS_NORMAL_FUNCTION")
+        .clang_arg("-DSVCALL_AS_NORMAL_FUNCTION") // this is questionable
+
+        // sdk_config.h - TODO
+        .clang_arg("-I.")
+
+        // Primary dependencies
+        .clang_arg("-I../nrf5_sdk/components/libraries/timer/")
+        .clang_arg("-I../nrf5_sdk/components/softdevice/s132/headers")
+
+        // Secondary dependencies
+        .clang_arg("-I../nrf5_sdk/components/libraries/util/")
         .clang_arg("-I../nrf5_sdk/components/device")
-        .clang_arg("-D__STATIC_INLINE= ")
-        .clang_arg("-D__START")
+        .clang_arg("-I../nrf5_sdk/components/toolchain")
+        .clang_arg("-I../nrf5_sdk/components/toolchain/cmsis/include")
+
         .clang_arg(env::var("TARGET").unwrap())
-        // .clang_arg("-x")
-        // .clang_arg("c++")
-        // .clang_arg("-std=c++11")
-        // .parse_callbacks(Box::new(MacroCallback {macros: macros.clone()}))
+
+        // some of the core.h doxygen comments fuck up the parser
+        //   tracking issue: https://github.com/servo/rust-bindgen/issues/426
+        .generate_comments(false)
+
         .generate()
         .expect("Unable to generate bindings");
 
-    let out_path = PathBuf::from(&outdir);
+    let out_path = PathBuf::from(outdir);
     bindings
-        .write_to_file(out_path.join("ble.rs"))
-        .expect("Couldn't write bindings!");
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write Nordic bindings!");
 
-    println!("cargo:rustc-link-search=native={}", &outdir);
+    println!("cargo:rustc-link-search=native={}", outdir);
 }
+
