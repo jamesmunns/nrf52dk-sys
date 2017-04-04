@@ -1,0 +1,5 @@
+# Using debian's package, this is installed to /usr/bin/arm-none-eabi-gcc, so point to /usr
+#   Debian Jessie currently uses 4.8.4.
+GNU_INSTALL_ROOT := /usr
+GNU_VERSION := 4.8.4
+GNU_PREFIX := arm-none-eabi
