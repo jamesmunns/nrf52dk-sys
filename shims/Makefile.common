@@ -9,7 +9,10 @@
 # the file.
 
 PLATFORM_SUFFIX := $(if $(filter Windows%,$(OS)),windows,posix)
-TOOLCHAIN_CONFIG_FILE := $(TEMPLATE_PATH)/Makefile.$(PLATFORM_SUFFIX)
+
+# AJM - Un-hardcode this
+#  TOOLCHAIN_CONFIG_FILE := $(TEMPLATE_PATH)/Makefile.$(PLATFORM_SUFFIX)
+TOOLCHAIN_CONFIG_FILE := ./Makefile.$(PLATFORM_SUFFIX)
 include $(TOOLCHAIN_CONFIG_FILE)
 
 # Toolchain commands
@@ -23,23 +26,23 @@ OBJDUMP := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objdump"
 OBJCOPY := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objcopy"
 SIZE    := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size"
 $(if $(shell $(CC) --version),,$(info Cannot find: $(CC).) \
-  $(info Please set values in: "$(abspath $(TOOLCHAIN_CONFIG_FILE))") \
-  $(info according to the actual configuration of your system.) \
-  $(error Cannot continue))
+	$(info Please set values in: "$(abspath $(TOOLCHAIN_CONFIG_FILE))") \
+	$(info according to the actual configuration of your system.) \
+	$(error Cannot continue))
 
 # Use ccache on linux if available
 CCACHE := $(if $(filter Windows%,$(OS)),, \
-               $(if $(wildcard /usr/bin/ccache),ccache))
-CC     := $(CCACHE) $(CC)
+	$(if $(wildcard /usr/bin/ccache),ccache))
+CC := $(CCACHE) $(CC)
 
 MK := mkdir
 RM := rm -rf
 
 # echo suspend
 ifeq ($(VERBOSE),1)
-  NO_ECHO :=
+	NO_ECHO :=
 else
-  NO_ECHO := @
+	NO_ECHO := @
 endif
 
 # $1 type of item
@@ -73,13 +76,13 @@ endef
 # $2 list of source files
 define get_object_files
 $(foreach src_file, $(2), \
-  $(call ensure_exists,source file, $(src_file)) \
-  $(eval obj_file := $(call get_object_file_name, $(1), $(src_file))) \
-  $(eval DEPENDENCIES += $(obj_file:.o=.d)) \
-  $(call bind_obj_with_src, $(obj_file), $(src_file)) \
-  $(call bind_obj_with_target, $(obj_file), $(1)) \
-  $(eval $(obj_file): Makefile) \
-  $(obj_file))
+	$(call ensure_exists,source file, $(src_file)) \
+	$(eval obj_file := $(call get_object_file_name, $(1), $(src_file))) \
+	$(eval DEPENDENCIES += $(obj_file:.o=.d)) \
+	$(call bind_obj_with_src, $(obj_file), $(src_file)) \
+	$(call bind_obj_with_target, $(obj_file), $(1)) \
+	$(eval $(obj_file): Makefile) \
+	$(obj_file))
 endef
 
 # $1 variable name
@@ -93,13 +96,13 @@ endef
 define prepare_build
 $(eval DEPENDENCIES :=) \
 $(eval $(2): \
-  $(call get_object_files, $(1), $(SRC_FILES) \
-    $(call target_specific, SRC_FILES, $(1)))) \
+	$(call get_object_files, $(1), $(SRC_FILES) \
+		$(call target_specific, SRC_FILES, $(1)))) \
 $(eval -include $(DEPENDENCIES)) \
 $(eval INC_PATHS_$(strip $(1)) := \
-  $(foreach folder, $(INC_FOLDERS) $(call target_specific, INC_FOLDERS, $(1)), \
-    $(call ensure_exists,include folder, $(folder)) \
-    -I"$(folder)"))
+	$(foreach folder, $(INC_FOLDERS) $(call target_specific, INC_FOLDERS, $(1)), \
+		$(call ensure_exists,include folder, $(folder)) \
+		-I"$(folder)"))
 endef
 
 INC_PATHS = $(call target_specific, INC_PATHS, $($@T))
@@ -121,6 +124,11 @@ endef
 .PHONY: $(TARGETS) default all clean help flash
 
 all: $(TARGETS)
+# From teensy-rs
+# all: $(OBJS)
+#   @$(AR) crus libteensyduino.a $(OBJS)
+# default:
+# 	@$(AR) crus libsmoothblue.a $(DEPENDENCIES)
 
 clean:
 	$(RM) $(OUTPUT_DIRECTORY)
@@ -147,23 +155,24 @@ $(OUTPUT_DIRECTORY)/%.s.o.o: | $(OUTPUT_DIRECTORY)
 
 export FILE_LIST
 DUMP_FILE_LIST := \
-  "$(MAKE)" -s --no-print-directory -f $(TEMPLATE_PATH)/file_list.mk
+	"$(MAKE)" -s --no-print-directory -f $(TEMPLATE_PATH)/file_list.mk
+
 # Link object files
-%.out:
-	$(eval FILE_LIST := $^ $(LIB_FILES))
-	$(NO_ECHO)$(DUMP_FILE_LIST) > $(@:.out=.in)
-	@echo Linking target: $@
-	$(NO_ECHO)$(CC) -Wl,-Map=$(@:.out=.map) $(LDFLAGS) @$(@:.out=.in) -lm -o $@
-	-@echo ''
-	$(NO_ECHO)$(SIZE) $@
-	-@echo ''
+# %.out:
+# 	$(eval FILE_LIST := $^ $(LIB_FILES))
+# 	$(NO_ECHO)$(DUMP_FILE_LIST) > $(@:.out=.in)
+# 	@echo Linking target: $@
+# 	$(NO_ECHO)$(CC) -Wl,-Map=$(@:.out=.map) $(LDFLAGS) @$(@:.out=.in) -lm -o $@
+# 	-@echo ''
+# 	$(NO_ECHO)$(SIZE) $@
+# 	-@echo ''
 
-# Create binary .bin file from the .out file
-%.bin: %.out
-	@echo Preparing: $@
-	$(NO_ECHO)$(OBJCOPY) -O binary $< $@
+# # Create binary .bin file from the .out file
+# %.bin: %.out
+# 	@echo Preparing: $@
+# 	$(NO_ECHO)$(OBJCOPY) -O binary $< $@
 
-# Create binary .hex file from the .out file
-%.hex: %.out
-	@echo Preparing: $@
-	$(NO_ECHO)$(OBJCOPY) -O ihex $< $@
+# # Create binary .hex file from the .out file
+# %.hex: %.out
+# 	@echo Preparing: $@
+# 	$(NO_ECHO)$(OBJCOPY) -O ihex $< $@
