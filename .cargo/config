@@ -1,5 +1,31 @@
 [target.thumbv7em-none-eabihf]
 rustflags = [
+
+# Matches between makefile and teensy flags
+    "-C", "link-arg=-mthumb",
+    "-C", "link-arg=-Tmemory.x",
+    "-C", "link-arg=-mcpu=cortex-m4",
+    "-C", "link-arg=-Wl,--gc-sections",
+    "-C", "link-arg=--specs=nano.specs",
+    "-C", "link-arg=-lc",
+    "-C", "link-arg=-lnosys",
+
+
+# Only in the Makefile
+    "-C", "link-arg=-mabi=aapcs",
+    "-C", "link-arg=-mfloat-abi=hard",
+    "-C", "link-arg=-mfpu=fpv4-sp-d16",
+#   "-C", "link-arg=-L $(TEMPLATE_PATH)"
+
+# Only in the Teensy project
+    "-C", "link-arg=-Os",
+    "-C", "link-arg=-lm",
+    "-C", "link-arg=-Wl,--start-group",
+    "-C", "link-arg=-lgcc",
+    "-C", "link-arg=-Wl,--end-group",
+#   "-C", "link-arg=--defsym=__rtc_localtime=0",
+
+# Only in cortex-m template
   "-C", "link-arg=-Wl,--build-id=none",
   "-C", "link-arg=-nostartfiles",
 ]
