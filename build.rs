@@ -8,6 +8,9 @@ use bindgen::Builder;
 use std::process::Command;
 use glob::glob;
 
+use std::fs::File;
+use std::io::Write;
+
 fn main() {
 
     let outdir = env::var("OUT_DIR").unwrap();
@@ -16,8 +19,26 @@ fn main() {
     // println!("cargo:rustc-link-search=native={}", outdir);
     // println!("cargo:libdir=???");
 
+    // Okay, these build times are reeeeeeally long. I need a smarter way
+    //   to do this, but for now this should be fine. If you need to force
+    //   rebuild, touch build.rs.
+    println!("cargo:rerun-if-changed=build.rs");
+
+    process_map_file(&outdir);
     generate_ble(&outdir);
     make_c_deps(&outdir);
+}
+
+fn process_map_file(outdir: &String) {
+    let out = &PathBuf::from(outdir);
+    File::create(out.join("memory.x"))
+        .unwrap()
+        .write_all(include_bytes!("memory.x"))
+        .unwrap();
+
+
+    println!("cargo:rustc-link-search={}", out.display());
+    println!("cargo:rerun-if-changed=memory.x");
 }
 
 fn make_c_deps(outdir: &String) {

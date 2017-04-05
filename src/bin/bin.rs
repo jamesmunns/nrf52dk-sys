@@ -12,6 +12,13 @@ use smooth_blue::interrupts::{self, Interrupts};
 
 fn main() {
     // println!("Hello, world!");
+    unsafe {
+        // Basic test that I can call the C code (and it is linked correctly)
+        // NOTE: this probably still isn't a good test until I can verify linking
+        let _ = smooth_blue::app_timer_init();
+        smooth_blue::SystemInit();
+        smooth_blue::SystemCoreClockUpdate();
+    }
 }
 
 // The program must specify how exceptions will be handled
