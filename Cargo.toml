@@ -15,6 +15,7 @@ git = "https://github.com/rust-lang-nursery/compiler-builtins"
 
 [build-dependencies]
 bindgen = {git = "https://github.com/servo/rust-bindgen", rev = "master"}
+glob = "*"
 # bindgen = { path = "../rust-bindgen" }
 # gcc = "0.3"
 

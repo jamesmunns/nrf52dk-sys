@@ -1,34 +1,49 @@
 extern crate bindgen;
-// extern crate gcc;
+extern crate glob;
 
-// use std::collections::HashSet;
 use std::env;
 use std::path::PathBuf;
-// use std::sync::{Arc, RwLock};
 use bindgen::Builder;
-// use bindgen::callbacks::ParseCallbacks;
 
-// #[derive(Debug)]
-// struct MacroCallback {
-//     macros: Arc<RwLock<HashSet<String>>>,
-// }
-
-// impl ParseCallbacks for MacroCallback {
-//     fn parsed_macro(&self, _name: &str) {
-//         self.macros.write().unwrap().insert(String::from(_name));
-//     }
-// }
+use std::process::Command;
+use glob::glob;
 
 fn main() {
-    // gcc::Config::new()
-    //     .cpp(true)
-    //     .file("cpp/Test.cc")
-    //     .compile("libtest.a");
 
-    // let macros = Arc::new(RwLock::new(HashSet::new()));
     let outdir = env::var("OUT_DIR").unwrap();
 
+    // NOTE: If we get linking errors later, these might be needed somehow:
+    // println!("cargo:rustc-link-search=native={}", outdir);
+    // println!("cargo:libdir=???");
+
     generate_ble(&outdir);
+    make_c_deps(&outdir);
+}
+
+fn make_c_deps(outdir: &String) {
+    assert!(Command::new("make")
+        .arg("-C")
+        .arg("shims")
+        .arg("-j8") // TODO
+        .status()
+        .expect("failed to build Blue libs")
+        .success());
+
+    let out_path = PathBuf::from(outdir);
+
+    assert!(Command::new("arm-none-eabi-ar")
+        .arg("crus")
+        .arg(out_path.join("libnrf.a"))
+        .args(&glob("./shims/_build/*.o")
+            .expect("Failed to read glob pattern")
+            .filter_map(|x| x.ok())
+            .collect::<Vec<PathBuf>>())
+        .status()
+        .expect("failed to create blue archive")
+        .success());
+
+    println!("cargo:rustc-link-search={}", outdir);
+    println!("cargo:rustc-link-lib=static=nrf");
 }
 
 fn generate_ble(outdir: &String) {

@@ -157,6 +157,9 @@ export FILE_LIST
 DUMP_FILE_LIST := \
 	"$(MAKE)" -s --no-print-directory -f $(TEMPLATE_PATH)/file_list.mk
 
+# %.a:
+# 	$(AR) crus libsmoothblue.a
+
 # Link object files
 # %.out:
 # 	$(eval FILE_LIST := $^ $(LIB_FILES))

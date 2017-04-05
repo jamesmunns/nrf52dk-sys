@@ -5,9 +5,6 @@ OUTPUT_DIRECTORY := _build
 SDK_ROOT := ../../nrf5_sdk
 PROJ_DIR := ./
 
-# $(OUTPUT_DIRECTORY)/nrf52832_xxaa.out: \
-#   LINKER_SCRIPT  := ble_app_template_gcc_nrf52.ld
-
 # Source files common to all targets
 SRC_FILES += \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
@@ -222,18 +219,6 @@ ASMFLAGS += -DNRF_SD_BLE_API_VERSION=4
 ASMFLAGS += -DS132
 ASMFLAGS += -DSOFTDEVICE_PRESENT
 ASMFLAGS += -DSWI_DISABLE0
-
-# # Linker flags
-# LDFLAGS += -mthumb -mabi=aapcs -L $(TEMPLATE_PATH) -T$(LINKER_SCRIPT)
-# LDFLAGS += -mcpu=cortex-m4
-# LDFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
-# # let linker to dump unused sections
-# LDFLAGS += -Wl,--gc-sections
-# # use newlib in nano version
-# LDFLAGS += --specs=nano.specs -lc -lnosys
-
-
-# .PHONY: $(TARGETS) default all clean help flash flash_softdevice
 
 # Default target - first one defined
 default: nrf52832_xxaa
