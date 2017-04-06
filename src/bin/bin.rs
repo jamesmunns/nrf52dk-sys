@@ -7,27 +7,19 @@
 #[macro_use]
 extern crate smooth_blue;
 
-use smooth_blue::exceptions::{self, Exceptions};
-use smooth_blue::interrupts::{self, Interrupts};
-
-fn main() {
+#[no_mangle]
+pub unsafe extern fn main() {
     // println!("Hello, world!");
-    unsafe {
         // Basic test that I can call the C code (and it is linked correctly)
         // NOTE: this probably still isn't a good test until I can verify linking
-        let _ = smooth_blue::app_timer_init();
-        smooth_blue::SystemInit();
-        smooth_blue::SystemCoreClockUpdate();
-    }
+        let mut x = 0;
+        x = smooth_blue::nrf_log_init(None);
+        x = smooth_blue::app_timer_init();
+
+        // x = bsp_init(smooth_blue::BSP_INIT_LED | smooth_blue::BSP_INIT_BUTTONS, 0);
+
+        // x = bsp_btn_ble_init(0, 0);
+
+        // g_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
+
 }
-
-// The program must specify how exceptions will be handled
-// Here we just use the default handler to handle all the exceptions
-#[no_mangle]
-pub static _EXCEPTIONS: Exceptions =
-    Exceptions { ..exceptions::DEFAULT_HANDLERS };
-
-// Likewise with interrupts
-#[no_mangle]
-pub static _INTERRUPTS: Interrupts =
-    Interrupts { ..interrupts::DEFAULT_HANDLERS };

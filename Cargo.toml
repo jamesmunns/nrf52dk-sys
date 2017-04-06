@@ -9,15 +9,9 @@ build = "build.rs"
 cortex-m = "0.1.6"
 r0 = "0.2.0"
 
-[dependencies.compiler_builtins]
-features = ["mem"]
-git = "https://github.com/rust-lang-nursery/compiler-builtins"
-
 [build-dependencies]
 bindgen = {git = "https://github.com/servo/rust-bindgen", rev = "master"}
 glob = "*"
-# bindgen = { path = "../rust-bindgen" }
-# gcc = "0.3"
 
 # [features]
 # testing_only_llvm_stable = ["bindgen/testing_only_llvm_stable"]

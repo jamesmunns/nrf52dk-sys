@@ -6,8 +6,6 @@
 #![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
 #![deny(warnings)]
 #![feature(asm)]
-#![feature(compiler_builtins_lib)]
-#![feature(core_intrinsics)]
 #![feature(lang_items)]
 #![feature(linkage)]
 #![feature(macro_reexport)]
@@ -18,7 +16,6 @@
 #[macro_reexport(hprint, hprintln)]
 #[macro_use]
 extern crate cortex_m_semihosting;
-extern crate compiler_builtins;
 #[macro_reexport(bkpt)]
 #[macro_use]
 extern crate cortex_m;
@@ -28,9 +25,6 @@ extern crate r0;
 mod macros;
 
 mod lang_items;
-
-pub mod exceptions;
-pub mod interrupts;
 
 /// Copied from https://github.com/rust-lang/rust/blob/master/src/libstd/os/raw.rs
 pub mod ctypes {

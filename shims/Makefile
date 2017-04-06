@@ -219,6 +219,7 @@ ASMFLAGS += -DNRF_SD_BLE_API_VERSION=4
 ASMFLAGS += -DS132
 ASMFLAGS += -DSOFTDEVICE_PRESENT
 ASMFLAGS += -DSWI_DISABLE0
+ASMFLAGS += -D__START=main
 
 # Default target - first one defined
 default: nrf52832_xxaa

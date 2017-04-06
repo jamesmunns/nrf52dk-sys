@@ -7,7 +7,6 @@ rustflags = [
     "-C", "link-arg=-mcpu=cortex-m4",
     "-C", "link-arg=-Wl,--gc-sections",
     "-C", "link-arg=--specs=nano.specs",
-    "-C", "link-arg=-lc",
     "-C", "link-arg=-lnosys",
 
 
@@ -19,13 +18,17 @@ rustflags = [
 
 # Only in the Teensy project
     "-C", "link-arg=-Os",
-    "-C", "link-arg=-lm",
     "-C", "link-arg=-Wl,--start-group",
-    "-C", "link-arg=-lgcc",
     "-C", "link-arg=-Wl,--end-group",
 #   "-C", "link-arg=--defsym=__rtc_localtime=0",
 
 # Only in cortex-m template
-  "-C", "link-arg=-Wl,--build-id=none",
-  "-C", "link-arg=-nostartfiles",
+    "-C", "link-arg=-Wl,--build-id=none",
+    "-C", "link-arg=-nostartfiles",
+
+# Removed to prevent collisions
+#    "-C", "link-arg=-lc",
+#    "-C", "link-arg=-lm",
+#    "-C", "link-arg=-lgcc",
+
 ]
