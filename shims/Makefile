@@ -2,7 +2,7 @@ PROJECT_NAME     := ble_app_template_pca10040_s132
 TARGETS          := nrf52832_xxaa
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := ../../nrf5_sdk
+SDK_ROOT := ../nRF5-sdk
 PROJ_DIR := ./
 
 # Source files common to all targets

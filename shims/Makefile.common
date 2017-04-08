@@ -20,6 +20,7 @@ CC      := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-gcc"
 CXX     := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-c++"
 AS      := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-as"
 AR      := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ar" -r
+ARNR    := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ar"
 LD      := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-ld"
 NM      := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-nm"
 OBJDUMP := "$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objdump"
@@ -121,14 +122,17 @@ $(eval $(1) := $(2)) \
 $(call prepare_build, $(1), $(1))
 endef
 
+# TODO: AJM - Build static lib with makefile
+# # $1 target name
+# # $2 library file name
+# define define_library
+# $(call prepare_build, $(1), libnrfdeps) \
+# $(eval $(1): libnrf.a)
+# endef
+
 .PHONY: $(TARGETS) default all clean help flash
 
 all: $(TARGETS)
-# From teensy-rs
-# all: $(OBJS)
-#   @$(AR) crus libteensyduino.a $(OBJS)
-# default:
-# 	@$(AR) crus libsmoothblue.a $(DEPENDENCIES)
 
 clean:
 	$(RM) $(OUTPUT_DIRECTORY)
@@ -157,25 +161,7 @@ export FILE_LIST
 DUMP_FILE_LIST := \
 	"$(MAKE)" -s --no-print-directory -f $(TEMPLATE_PATH)/file_list.mk
 
-# %.a:
-# 	$(AR) crus libsmoothblue.a
-
-# Link object files
-# %.out:
-# 	$(eval FILE_LIST := $^ $(LIB_FILES))
-# 	$(NO_ECHO)$(DUMP_FILE_LIST) > $(@:.out=.in)
-# 	@echo Linking target: $@
-# 	$(NO_ECHO)$(CC) -Wl,-Map=$(@:.out=.map) $(LDFLAGS) @$(@:.out=.in) -lm -o $@
-# 	-@echo ''
-# 	$(NO_ECHO)$(SIZE) $@
-# 	-@echo ''
-
-# # Create binary .bin file from the .out file
-# %.bin: %.out
-# 	@echo Preparing: $@
-# 	$(NO_ECHO)$(OBJCOPY) -O binary $< $@
-
-# # Create binary .hex file from the .out file
-# %.hex: %.out
-# 	@echo Preparing: $@
-# 	$(NO_ECHO)$(OBJCOPY) -O ihex $< $@
+# TODO: AJM - Build static lib with makefile
+# libnrf.a: libnrfdeps
+# 	@echo "Making a library"
+# 	$(ARNR) crus $(OUTPUT_DIRECTORY)/libnrf.a $(OUTPUT_DIRECTORY)/*.o
