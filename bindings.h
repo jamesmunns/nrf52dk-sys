@@ -34,3 +34,6 @@
 #include "peer_manager.h"
 #include "sensorsim.h"
 #include "softdevice_handler.h"
+
+// We have to go deeper
+#include "ble_stack_handler_types.h"

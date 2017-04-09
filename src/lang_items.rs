@@ -1,25 +1,27 @@
 /// Default panic handler
-#[linkage = "weak"]
-#[lang = "panic_fmt"]
-unsafe extern "C" fn panic_fmt(_args: ::core::fmt::Arguments,
-                               _file: &'static str,
-                               _line: u32)
-                               -> ! {
-    hprint!("panicked at '");
-    match () {
-        #[cfg(feature = "semihosting")]
-        () => {
-            ::cortex_m_semihosting::io::write_fmt(_args);
-        }
-        #[cfg(not(feature = "semihosting"))]
-        () => {}
-    }
-    hprintln!("', {}:{}", _file, _line);
+// #[linkage = "weak"]
+// #[no_mangle]
+// #[lang = "panic_fmt"]
+// pub unsafe extern "C" fn panic_fmt(_args: ::core::fmt::Arguments,
+//                                _file: &'static str,
+//                                _line: u32)
+//                                -> ! {
+//     hprint!("panicked at '");
+//     match () {
+//         #[cfg(feature = "semihosting")]
+//         () => {
+//             ::cortex_m_semihosting::io::write_fmt(_args);
+//         }
+//         #[cfg(not(feature = "semihosting"))]
+//         () => {}
+//     }
+//     hprintln!("', {}:{}", _file, _line);
 
-    bkpt!();
+//     bkpt!();
 
-    loop {}
-}
+//     loop {}
+// }
+#[linkage = "weak"] #[lang = "panic_fmt"] #[no_mangle] extern fn panic_fmt() -> ! {loop{}}
 
 /// Lang item required to make the normal `main` work in applications
 // This is how the `start` lang item works:

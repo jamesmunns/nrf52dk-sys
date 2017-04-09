@@ -78,6 +78,8 @@ fn generate_ble(outdir: &String) {
 
         // Defines
         .clang_arg("-DSVCALL_AS_NORMAL_FUNCTION") // this is questionable
+        // .clang_arg("-target")
+        // .clang_arg("thumbv7em-none-eabihf")
 
         // sdk_config.h - TODO
         .clang_arg("-I.")
