@@ -53,15 +53,15 @@ fn make_c_deps(outdir: &String) {
     let out_path = PathBuf::from(outdir);
 
     assert!(Command::new("arm-none-eabi-ar")
-        .arg("crus")
-        .arg(out_path.join("libnrf.a"))
-        .args(&glob("./shims/_build/*.o")
-            .expect("Failed to read glob pattern")
-            .filter_map(|x| x.ok())
-            .collect::<Vec<PathBuf>>())
-        .status()
-        .expect("failed to create blue archive")
-        .success());
+                .arg("crus")
+                .arg(out_path.join("libnrf.a"))
+                .args(&glob("./shims/_build/*.o")
+                           .expect("Failed to read glob pattern")
+                           .filter_map(|x| x.ok())
+                           .collect::<Vec<PathBuf>>())
+                .status()
+                .expect("failed to create blue archive")
+                .success());
 
     println!("cargo:rustc-link-search={}", outdir);
     println!("cargo:rustc-link-lib=static=nrf");
@@ -227,4 +227,3 @@ fn generate_ble(outdir: &String) {
 
     println!("cargo:rustc-link-search=native={}", outdir);
 }
-

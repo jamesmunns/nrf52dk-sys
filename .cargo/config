@@ -14,6 +14,8 @@ rustflags = [
     "-C", "link-arg=-mabi=aapcs",
     "-C", "link-arg=-mfloat-abi=hard",
     "-C", "link-arg=-mfpu=fpv4-sp-d16",
+
+# This is to get the base linker file, which we've duplicated here
 #   "-C", "link-arg=-L $(TEMPLATE_PATH)"
 
 # Only in the Teensy project

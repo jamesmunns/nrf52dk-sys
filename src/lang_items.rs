@@ -1,27 +1,25 @@
 /// Default panic handler
-// #[linkage = "weak"]
-// #[no_mangle]
-// #[lang = "panic_fmt"]
-// pub unsafe extern "C" fn panic_fmt(_args: ::core::fmt::Arguments,
-//                                _file: &'static str,
-//                                _line: u32)
-//                                -> ! {
-//     hprint!("panicked at '");
-//     match () {
-//         #[cfg(feature = "semihosting")]
-//         () => {
-//             ::cortex_m_semihosting::io::write_fmt(_args);
-//         }
-//         #[cfg(not(feature = "semihosting"))]
-//         () => {}
-//     }
-//     hprintln!("', {}:{}", _file, _line);
+#[linkage = "weak"]
+#[lang = "panic_fmt"]
+unsafe extern "C" fn panic_fmt(_args: ::core::fmt::Arguments,
+                               _file: &'static str,
+                               _line: u32)
+                               -> ! {
+    hprint!("panicked at '");
+    match () {
+        #[cfg(feature = "semihosting")]
+        () => {
+            ::cortex_m_semihosting::io::write_fmt(_args);
+        }
+        #[cfg(not(feature = "semihosting"))]
+        () => {}
+    }
+    hprintln!("', {}:{}", _file, _line);
 
-//     bkpt!();
+    bkpt!();
 
-//     loop {}
-// }
-#[linkage = "weak"] #[lang = "panic_fmt"] #[no_mangle] extern fn panic_fmt() -> ! {loop{}}
+    loop {}
+}
 
 /// Lang item required to make the normal `main` work in applications
 // This is how the `start` lang item works:
@@ -42,10 +40,7 @@
 // has to call `rustc_main`. That's covered by the `reset_handler` function in
 // `src/exceptions.rs`
 #[lang = "start"]
-extern "C" fn start(main: fn(),
-                    _argc: isize,
-                    _argv: *const *const u8)
-                    -> isize {
+extern "C" fn start(main: fn(), _argc: isize, _argv: *const *const u8) -> isize {
     main();
 
     0
