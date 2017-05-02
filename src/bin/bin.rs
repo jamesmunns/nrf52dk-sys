@@ -151,6 +151,131 @@ pub unsafe fn init_bt() {
     let y = smooth_blue::softdevice_sys_evt_handler_set(Some(sys_evt));
     assert_eq!(0, y);
 
+    // gap_params_init()
+    //////////////////////////////////////////////////////////////////////////
+    // AJM TODO: This function is huge because there are some buffers that probably need to have a full lifetime.
+    //     TODO refactor
+
+    //    ret_code_t              err_code;
+    //    ble_gap_conn_params_t   gap_conn_params;
+    //    ble_gap_conn_sec_mode_t sec_mode;
+    //
+    //    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+    //
+    //    err_code = sd_ble_gap_device_name_set(&sec_mode,
+    //                                          (const uint8_t *)DEVICE_NAME,
+    //                                          strlen(DEVICE_NAME));
+    //    APP_ERROR_CHECK(err_code);
+    //
+    //    /* YOUR_JOB: Use an appearance value matching the application's use case.
+    //       err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
+    //       APP_ERROR_CHECK(err_code); */
+    //
+    //    memset(&gap_conn_params, 0, sizeof(gap_conn_params));
+    //
+    //    gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
+    //    gap_conn_params.max_conn_interval = MAX_CONN_INTERVAL;
+    //    gap_conn_params.slave_latency     = SLAVE_LATENCY;
+    //    gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
+    //
+    //    err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
+    //    APP_ERROR_CHECK(err_code);
+
+    // void gatt_init(void)
+    //////////////////////////////////////////////////////////////////////////
+
+    //    ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
+    //    APP_ERROR_CHECK(err_code);
+
+    // void advertising_init
+    //////////////////////////////////////////////////////////////////////////
+    //    ret_code_t             err_code;
+    //    ble_advdata_t          advdata;
+    //    ble_adv_modes_config_t options;
+    //
+    //    // Build advertising data struct to pass into @ref ble_advertising_init.
+    //    memset(&advdata, 0, sizeof(advdata));
+    //
+    //    advdata.name_type               = BLE_ADVDATA_FULL_NAME;
+    //    advdata.include_appearance      = true;
+    //    advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+    //    advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+    //    advdata.uuids_complete.p_uuids  = m_adv_uuids;
+    //
+    //    memset(&options, 0, sizeof(options));
+    //    options.ble_adv_fast_enabled  = true;
+    //    options.ble_adv_fast_interval = APP_ADV_INTERVAL;
+    //    options.ble_adv_fast_timeout  = APP_ADV_TIMEOUT_IN_SECONDS;
+    //
+    //    err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
+    //    APP_ERROR_CHECK(err_code);
+
+    // conn_params_init()
+    //////////////////////////////////////////////////////////////////////////
+    //    ret_code_t             err_code;
+    //    ble_conn_params_init_t cp_init;
+    //
+    //    memset(&cp_init, 0, sizeof(cp_init));
+    //
+    //    cp_init.p_conn_params                  = NULL;
+    //    cp_init.first_conn_params_update_delay = FIRST_CONN_PARAMS_UPDATE_DELAY;
+    //    cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY;
+    //    cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT;
+    //    cp_init.start_on_notify_cccd_handle    = BLE_GATT_HANDLE_INVALID;
+    //    cp_init.disconnect_on_fail             = false;
+    //    cp_init.evt_handler                    = on_conn_params_evt;
+    //    cp_init.error_handler                  = conn_params_error_handler;
+    //
+    //    err_code = ble_conn_params_init(&cp_init);
+    //    APP_ERROR_CHECK(err_code);
+
+    // peer_manager_init()
+    //////////////////////////////////////////////////////////////////////////
+    //    ble_gap_sec_params_t sec_param;
+    //    ret_code_t           err_code;
+    //
+    //    err_code = pm_init();
+    //    APP_ERROR_CHECK(err_code);
+    //
+    //    memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
+    //
+    //    // Security parameters to be used for all security procedures.
+    //    sec_param.bond           = SEC_PARAM_BOND;
+    //    sec_param.mitm           = SEC_PARAM_MITM;
+    //    sec_param.lesc           = SEC_PARAM_LESC;
+    //    sec_param.keypress       = SEC_PARAM_KEYPRESS;
+    //    sec_param.io_caps        = SEC_PARAM_IO_CAPABILITIES;
+    //    sec_param.oob            = SEC_PARAM_OOB;
+    //    sec_param.min_key_size   = SEC_PARAM_MIN_KEY_SIZE;
+    //    sec_param.max_key_size   = SEC_PARAM_MAX_KEY_SIZE;
+    //    sec_param.kdist_own.enc  = 1;
+    //    sec_param.kdist_own.id   = 1;
+    //    sec_param.kdist_peer.enc = 1;
+    //    sec_param.kdist_peer.id  = 1;
+    //
+    //    err_code = pm_sec_params_set(&sec_param);
+    //    APP_ERROR_CHECK(err_code);
+    //
+    //    err_code = pm_register(pm_evt_handler);
+    //    APP_ERROR_CHECK(err_code);
+
+    // advertising_start()
+    //////////////////////////////////////////////////////////////////////////
+    //    if (erase_bonds == true)
+    //    {
+    //        delete_bonds();
+    //        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
+    //    }
+    //    else
+    //    {
+    //        ret_code_t err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+    //
+    //        APP_ERROR_CHECK(err_code);
+    //    }
+
+    //////////////////////////////////////////////////////////////////////////
+    // AJM DONE HERE
+    //////////////////////////////////////////////////////////////////////////
     loop {
         let _ = smooth_blue::sd_app_evt_wait();
     }
