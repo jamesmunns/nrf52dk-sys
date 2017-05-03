@@ -37,3 +37,6 @@
 
 // We have to go deeper
 #include "ble_stack_handler_types.h"
+
+#include "ble_advdata.h"
+#include "bsp.h"
