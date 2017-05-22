@@ -16,7 +16,10 @@ pub unsafe extern "C" fn main() {
     // NOTE: this probably still isn't a good test until I can verify linking
     let mut x = 0;
     x = smooth_blue::nrf_log_init(None);
+    assert_eq!(x, 0);
+
     x = smooth_blue::app_timer_init();
+    assert_eq!(x, 0);
 
     init_bt();
 
@@ -50,7 +53,7 @@ pub unsafe fn init_bt() {
     //  *
     //  * @details Initializes the SoftDevice and the BLE event interrupt.
     //  */
-    // static void ble_stack_init(TSDK_bluetooth_event bt_evt, TSDK_system_event sys_evt)
+    // static void ble_stack_init(void)
     // {
     //     ret_code_t err_code;
 
@@ -77,12 +80,12 @@ pub unsafe fn init_bt() {
     //         //                                    sizeof(BLE_EVT_BUFFER),                                 \
     //         //                                    EVT_HANDLER);                                           \
     //         // APP_ERROR_CHECK(ERR_CODE);
-    let mut x: [u8; 100] = [0; 100]; //*mut _ as *mut c_void
+    let mut event_buffer: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
     let y = smooth_blue::softdevice_handler_init(&mut clk_cfg as
                                                  *mut smooth_blue::nrf_clock_lf_cfg_t,
-                                                 &mut x[0] as *mut _ as
+                                                 &mut event_buffer[0] as *mut _ as
                                                  *mut smooth_blue::ctypes::c_void,
-                                                 100,
+                                                 88,
                                                  None);
     assert_eq!(0, y);
 
@@ -99,16 +102,11 @@ pub unsafe fn init_bt() {
     //     ble_cfg_t ble_cfg;
     //     memset(&ble_cfg, 0, sizeof(ble_cfg));
     //     ble_cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 0;
+    //     err_code = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &ble_cfg, ram_start);
+    //     APP_ERROR_CHECK(err_code);
 
-    // I'm so bad. So so bad.
-    let mut ble_cfg = core::mem::transmute::<[u8; 24], smooth_blue::ble_cfg_t>([0u8; 24]);
-
-
-
-    //     //AJM err_code = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &ble_cfg, ram_start);
-    //     //AJM APP_ERROR_CHECK(err_code);
-    let y = smooth_blue::sd_ble_cfg_set(smooth_blue::BLE_COMMON_CFGS::BLE_COMMON_CFG_VS_UUID as
-                                        u32,
+    let mut ble_cfg = core::mem::zeroed::<smooth_blue::ble_cfg_t>();
+    let y = smooth_blue::sd_ble_cfg_set(smooth_blue::BLE_COMMON_CFGS::BLE_COMMON_CFG_VS_UUID as u32,
                                         &mut ble_cfg,
                                         ram_start);
     assert_eq!(0, y);
@@ -120,18 +118,13 @@ pub unsafe fn init_bt() {
     //     ble_cfg.gap_cfg.role_count_cfg.central_sec_count  = 0;
     //     err_code = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, ram_start);
     //     APP_ERROR_CHECK(err_code);
-    // AJM TODO: figure out how unions work
-    let foo: [u8; 24] = [smooth_blue::BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT as u8, 0, 0, 0,
-                         0, 0, 0, 0,
-                         0, 0, 0, 0,
-                         0, 0, 0, 0,
-                         0, 0, 0, 0,
-                         0, 0, 0, 0,];
-    ble_cfg = core::mem::transmute::<[u8; 24], smooth_blue::ble_cfg_t>(foo);
-    let y = smooth_blue::sd_ble_cfg_set(smooth_blue::BLE_GAP_CFGS::BLE_GAP_CFG_ROLE_COUNT as u32,
-                                        &mut ble_cfg,
-                                        ram_start);
-    assert_eq!(0, y);
+    let mut ble_cfg = core::mem::zeroed::<smooth_blue::ble_cfg_t>();
+    *ble_cfg.gap_cfg.as_mut().role_count_cfg.as_mut() =
+        smooth_blue::ble_gap_cfg_role_count_t {
+            periph_role_count: smooth_blue::BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT as u8,
+            central_role_count: 0,
+            central_sec_count: 0,
+        };
 
     //     // Enable BLE stack.
     //     err_code = softdevice_enable(&ram_start);
@@ -171,9 +164,9 @@ pub unsafe fn init_bt() {
     //                                          strlen(DEVICE_NAME));
     //    APP_ERROR_CHECK(err_code);
 
-    let name = "RUST-BLE".as_bytes();
+    let name = "RUST-BLE\0";
     let y = smooth_blue::sd_ble_gap_device_name_set(&mut sec_mode,
-                                                    name.as_ptr(),
+                                                    name.as_bytes().as_ptr(),
                                                     name.len() as u16);
     assert_eq!(0, y);
 
@@ -195,10 +188,14 @@ pub unsafe fn init_bt() {
     //    gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     let mut gap_conn_params = smooth_blue::ble_gap_conn_params_t {
-        min_conn_interval:  (100 * 1000) / (smooth_blue::UNIT_1_25_MS as u32) as u16,
-        max_conn_interval:  (200 * 1000) / (smooth_blue::UNIT_1_25_MS as u32) as u16,
-        slave_latency:      0,
-        conn_sup_timeout:   (4000 * 1000) / (smooth_blue::UNIT_10_MS as u32) as u16,
+        // min_conn_interval:  (100 * 1000) / (smooth_blue::UNIT_1_25_MS as u32) as u16,
+        // max_conn_interval:  (200 * 1000) / (smooth_blue::UNIT_1_25_MS as u32) as u16,
+        // slave_latency:      0,
+        // conn_sup_timeout:   (4000 * 1000) / (smooth_blue::UNIT_10_MS as u32) as u16,
+        min_conn_interval: 80,
+        max_conn_interval: 160,
+        slave_latency: 0,
+        conn_sup_timeout: 400,
     };
 
     //    err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
@@ -219,12 +216,11 @@ pub unsafe fn init_bt() {
 
     // Interlude with ludes
     //    static ble_uuid_t m_adv_uuids[] = {{BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE}}; /**< Universally unique service identifiers. */
-    let mut m_adv_uuids: [smooth_blue::ble_uuid_t; 1] = [
-        smooth_blue::ble_uuid_t {
-            uuid: smooth_blue::BLE_UUID_DEVICE_INFORMATION_SERVICE as u16,
-            type_: smooth_blue::BLE_UUID_TYPE_BLE as u8,
-        },
-    ];
+    let mut m_adv_uuids: [smooth_blue::ble_uuid_t; 1] =
+        [smooth_blue::ble_uuid_t {
+             uuid: smooth_blue::BLE_UUID_DEVICE_INFORMATION_SERVICE as u16,
+             type_: smooth_blue::BLE_UUID_TYPE_BLE as u8,
+         }];
 
 
     // void advertising_init
@@ -243,11 +239,11 @@ pub unsafe fn init_bt() {
 
     let mut advdata = core::mem::zeroed::<smooth_blue::ble_advdata_t>();
 
-    advdata.name_type           = smooth_blue::ble_advdata_name_type_t::BLE_ADVDATA_FULL_NAME;
-    advdata.include_appearance  = true;
-    advdata.flags               = smooth_blue::BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE as u8;
+    advdata.name_type = smooth_blue::ble_advdata_name_type_t::BLE_ADVDATA_FULL_NAME;
+    advdata.include_appearance = true;
+    advdata.flags = smooth_blue::BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE as u8;
     advdata.uuids_complete.uuid_cnt = m_adv_uuids.len() as u16;
-    advdata.uuids_complete.p_uuids = &mut m_adv_uuids[0]; // TODO - might not work with n > 1?
+    advdata.uuids_complete.p_uuids = &mut m_adv_uuids[0];
 
     //    #define APP_ADV_INTERVAL                64
     //    #define APP_ADV_TIMEOUT_IN_SECONDS      180
@@ -260,11 +256,15 @@ pub unsafe fn init_bt() {
     //    APP_ERROR_CHECK(err_code);
     let mut options = core::mem::zeroed::<smooth_blue::ble_adv_modes_config_t>();
 
-    options.ble_adv_fast_enabled  = true;
+    options.ble_adv_fast_enabled = true;
     options.ble_adv_fast_interval = 64;
-    options.ble_adv_fast_timeout  = 180;
+    options.ble_adv_fast_timeout = 180;
 
-    let y = smooth_blue::ble_advertising_init(&mut advdata, core::ptr::null(), &mut options, Some(on_adv_evt), None);
+    let y = smooth_blue::ble_advertising_init(&advdata,
+                                              core::ptr::null(),
+                                              &options,
+                                              Some(on_adv_evt),
+                                              None);
     assert_eq!(0, y);
 
     // conn_params_init()
@@ -285,6 +285,17 @@ pub unsafe fn init_bt() {
     //
     //    err_code = ble_conn_params_init(&cp_init);
     //    APP_ERROR_CHECK(err_code);
+    // let cp_init = smooth_blue::ble_conn_params_init_t {
+    //     p_conn_params                  : core::ptr::null(),
+    //     first_conn_params_update_delay : smooth_blue::FIRST_CONN_PARAMS_UPDATE_DELAY,
+    //     next_conn_params_update_delay  : smooth_blue::NEXT_CONN_PARAMS_UPDATE_DELAY,
+    //     max_conn_params_update_count   : smooth_blue::MAX_CONN_PARAMS_UPDATE_COUNT,
+    //     start_on_notify_cccd_handle    : smooth_blue::BLE_GATT_HANDLE_INVALID,
+    //     disconnect_on_fail             : false,
+    //     evt_handler                    : on_conn_params_evt,
+    //     error_handler                  : conn_params_error_handler,
+    // };
+
 
     // peer_manager_init()
     //////////////////////////////////////////////////////////////////////////
@@ -342,11 +353,11 @@ pub unsafe fn init_bt() {
 }
 
 unsafe extern "C" fn bt_evt(p_ble_evt: *mut smooth_blue::ble_evt_t) {
-    // bkpt!();
+    bkpt!();
 }
 
 unsafe extern "C" fn sys_evt(evt_id: u32) {
-    // bkpt!();
+    bkpt!();
 }
 
 // static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
@@ -367,16 +378,17 @@ unsafe extern "C" fn sys_evt(evt_id: u32) {
 // }
 
 unsafe extern "C" fn on_adv_evt(ble_adv_evt: smooth_blue::ble_adv_evt_t) {
+    bkpt!();
     use smooth_blue::ble_adv_evt_t::*;
     match ble_adv_evt {
         BLE_ADV_EVT_FAST => {
             let y = smooth_blue::bsp_indication_set(smooth_blue::bsp_indication_t::BSP_INDICATE_ADVERTISING);
             assert_eq!(0, y);
-        },
+        }
         BLE_ADV_EVT_IDLE => {
             sleep_mode_enter();
-        },
-        _ => {},
+        }
+        _ => {}
     }
 }
 

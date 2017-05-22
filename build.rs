@@ -211,6 +211,8 @@ fn generate_ble(outdir: &String) {
         .clang_arg("-DSOFTDEVICE_PRESENT")
         .clang_arg("-DSWI_DISABLE0")
 
+        .clang_arg("-fshort-enums") // grr
+
         .clang_arg(env::var("TARGET").unwrap())
 
         // some of the core.h doxygen comments fuck up the parser
