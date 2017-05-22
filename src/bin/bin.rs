@@ -4,7 +4,7 @@
 #![feature(asm)]
 
 // TODO: remove?
-#![allow(dead_code, unused_imports)]
+#![allow(dead_code, unused_imports, unused_assignments, unused_variables)]
 
 #[macro_use]
 extern crate smooth_blue;
@@ -116,8 +116,6 @@ pub unsafe fn init_bt() {
     //     ble_cfg.gap_cfg.role_count_cfg.periph_role_count  = BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT;
     //     ble_cfg.gap_cfg.role_count_cfg.central_role_count = 0;
     //     ble_cfg.gap_cfg.role_count_cfg.central_sec_count  = 0;
-    //     err_code = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, ram_start);
-    //     APP_ERROR_CHECK(err_code);
     let mut ble_cfg = core::mem::zeroed::<smooth_blue::ble_cfg_t>();
     *ble_cfg.gap_cfg.as_mut().role_count_cfg.as_mut() =
         smooth_blue::ble_gap_cfg_role_count_t {
@@ -125,6 +123,13 @@ pub unsafe fn init_bt() {
             central_role_count: 0,
             central_sec_count: 0,
         };
+
+    //     err_code = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, ram_start);
+    //     APP_ERROR_CHECK(err_code);
+    let y = smooth_blue::sd_ble_cfg_set(smooth_blue::BLE_GAP_CFGS::BLE_GAP_CFG_ROLE_COUNT as u32,
+                                        &mut ble_cfg,
+                                        ram_start);
+    assert_eq!(y, 0);
 
     //     // Enable BLE stack.
     //     err_code = softdevice_enable(&ram_start);
@@ -251,15 +256,13 @@ pub unsafe fn init_bt() {
     //    options.ble_adv_fast_enabled  = true;
     //    options.ble_adv_fast_interval = APP_ADV_INTERVAL;
     //    options.ble_adv_fast_timeout  = APP_ADV_TIMEOUT_IN_SECONDS;
-    //
-    //    err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
-    //    APP_ERROR_CHECK(err_code);
     let mut options = core::mem::zeroed::<smooth_blue::ble_adv_modes_config_t>();
-
     options.ble_adv_fast_enabled = true;
     options.ble_adv_fast_interval = 64;
     options.ble_adv_fast_timeout = 180;
 
+    //    err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
+    //    APP_ERROR_CHECK(err_code);
     let y = smooth_blue::ble_advertising_init(&advdata,
                                               core::ptr::null(),
                                               &options,
@@ -282,20 +285,29 @@ pub unsafe fn init_bt() {
     //    cp_init.disconnect_on_fail             = false;
     //    cp_init.evt_handler                    = on_conn_params_evt;
     //    cp_init.error_handler                  = conn_params_error_handler;
-    //
+    // #define APP_TIMER_TICKS(MS)                                \
+    //             ((uint32_t)ROUNDED_DIV(                        \
+    //             (MS) * (uint64_t)APP_TIMER_CLOCK_FREQ,         \
+    //             1000 * (APP_TIMER_CONFIG_RTC_FREQUENCY + 1)))
+    // #define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)
+    // #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)
+    // #define MAX_CONN_PARAMS_UPDATE_COUNT    3
+
+    let cp_init = smooth_blue::ble_conn_params_init_t {
+        p_conn_params                  : core::ptr::null_mut(),
+        first_conn_params_update_delay : (5 * 32768),
+        next_conn_params_update_delay  : (30 * 32768),
+        max_conn_params_update_count   : 3,
+        start_on_notify_cccd_handle    : smooth_blue::BLE_GATT_HANDLE_INVALID as u16,
+        disconnect_on_fail             : false,
+        evt_handler                    : Some(on_conn_params_evt),
+        error_handler                  : Some(conn_params_error_handler),
+    };
+
     //    err_code = ble_conn_params_init(&cp_init);
     //    APP_ERROR_CHECK(err_code);
-    // let cp_init = smooth_blue::ble_conn_params_init_t {
-    //     p_conn_params                  : core::ptr::null(),
-    //     first_conn_params_update_delay : smooth_blue::FIRST_CONN_PARAMS_UPDATE_DELAY,
-    //     next_conn_params_update_delay  : smooth_blue::NEXT_CONN_PARAMS_UPDATE_DELAY,
-    //     max_conn_params_update_count   : smooth_blue::MAX_CONN_PARAMS_UPDATE_COUNT,
-    //     start_on_notify_cccd_handle    : smooth_blue::BLE_GATT_HANDLE_INVALID,
-    //     disconnect_on_fail             : false,
-    //     evt_handler                    : on_conn_params_evt,
-    //     error_handler                  : conn_params_error_handler,
-    // };
-
+    let y = smooth_blue::ble_conn_params_init(&cp_init);
+    assert_eq!(y, 0);
 
     // peer_manager_init()
     //////////////////////////////////////////////////////////////////////////
@@ -304,7 +316,9 @@ pub unsafe fn init_bt() {
     //
     //    err_code = pm_init();
     //    APP_ERROR_CHECK(err_code);
-    //
+    let y = smooth_blue::pm_init();
+    assert_eq!(y, 0);
+
     //    memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
     //
     //    // Security parameters to be used for all security procedures.
@@ -320,26 +334,39 @@ pub unsafe fn init_bt() {
     //    sec_param.kdist_own.id   = 1;
     //    sec_param.kdist_peer.enc = 1;
     //    sec_param.kdist_peer.id  = 1;
-    //
+
+    let mut kdist_own = core::mem::zeroed::<smooth_blue::ble_gap_sec_kdist_t>();
+    kdist_own.set_enc(1);
+    kdist_own.set_id(1);
+
+    let mut kdist_peer = core::mem::zeroed::<smooth_blue::ble_gap_sec_kdist_t>();
+    kdist_peer.set_enc(1);
+    kdist_peer.set_id(1);
+
+    let mut sec_param = smooth_blue::ble_gap_sec_params_t {
+       _bitfield_1    : 0,
+       min_key_size   : 7,
+       max_key_size   : 16,
+       kdist_own: kdist_own,
+       kdist_peer: kdist_peer,
+    };
+
+    sec_param.set_bond(1);
+    sec_param.set_io_caps(smooth_blue::BLE_GAP_IO_CAPS_NONE as u8);
+
     //    err_code = pm_sec_params_set(&sec_param);
     //    APP_ERROR_CHECK(err_code);
-    //
+    let y = smooth_blue::pm_sec_params_set(&mut sec_param);
+    assert_eq!(y, 0);
+
     //    err_code = pm_register(pm_evt_handler);
     //    APP_ERROR_CHECK(err_code);
 
-    // advertising_start()
-    //////////////////////////////////////////////////////////////////////////
-    //    if (erase_bonds == true)
-    //    {
-    //        delete_bonds();
-    //        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
-    //    }
-    //    else
-    //    {
-    //        ret_code_t err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    //
-    //        APP_ERROR_CHECK(err_code);
-    //    }
+    let y = smooth_blue::pm_register(Some(pm_evt_handler));
+    assert_eq!(y, 0);
+
+    advertising_start(true);
+
 
     //////////////////////////////////////////////////////////////////////////
     // AJM DONE HERE
@@ -380,9 +407,11 @@ unsafe extern "C" fn sys_evt(evt_id: u32) {
 unsafe extern "C" fn on_adv_evt(ble_adv_evt: smooth_blue::ble_adv_evt_t) {
     bkpt!();
     use smooth_blue::ble_adv_evt_t::*;
+    use smooth_blue::bsp_indication_t::*;
+
     match ble_adv_evt {
         BLE_ADV_EVT_FAST => {
-            let y = smooth_blue::bsp_indication_set(smooth_blue::bsp_indication_t::BSP_INDICATE_ADVERTISING);
+            let y = smooth_blue::bsp_indication_set(BSP_INDICATE_ADVERTISING);
             assert_eq!(0, y);
         }
         BLE_ADV_EVT_IDLE => {
@@ -390,6 +419,37 @@ unsafe extern "C" fn on_adv_evt(ble_adv_evt: smooth_blue::ble_adv_evt_t) {
         }
         _ => {}
     }
+}
+
+// static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
+// {
+//     ret_code_t err_code;
+
+//     if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
+//     {
+//         err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
+//         APP_ERROR_CHECK(err_code);
+//     }
+// }
+
+unsafe extern "C" fn on_conn_params_evt(p_evt: *mut smooth_blue::ble_conn_params_evt_t) {
+    use smooth_blue::ble_conn_params_evt_type_t::*;
+    bkpt!();
+
+    match (*p_evt).evt_type {
+        BLE_CONN_PARAMS_EVT_FAILED => {
+            // ?
+        },
+        _ => {}
+    }
+}
+
+// static void conn_params_error_handler(uint32_t nrf_error)
+// {
+//     APP_ERROR_HANDLER(nrf_error);
+// }
+unsafe extern "C" fn conn_params_error_handler(nrf_error: u32) {
+    bkpt!();
 }
 
 // static void sleep_mode_enter(void)
@@ -415,4 +475,178 @@ unsafe fn sleep_mode_enter() {
 
     let y = smooth_blue::sd_power_system_off();
     assert_eq!(0, y);
+}
+
+// advertising_start()
+//////////////////////////////////////////////////////////////////////////
+//    if (erase_bonds == true)
+//    {
+//        delete_bonds();
+//        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
+//    }
+//    else
+//    {
+//        ret_code_t err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+//
+//        APP_ERROR_CHECK(err_code);
+//    }
+unsafe fn advertising_start(erase_bonds: bool) {
+    if erase_bonds {
+        delete_bonds();
+        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
+    }
+    else
+    {
+        use smooth_blue::ble_adv_mode_t::*;
+        let y = smooth_blue::ble_advertising_start(BLE_ADV_MODE_FAST);
+        assert_eq!(y, 0);
+    }
+}
+
+// static void delete_bonds(void)
+// {
+//     ret_code_t err_code;
+
+//     NRF_LOG_INFO("Erase bonds!\r\n");
+
+//     err_code = pm_peers_delete();
+//     APP_ERROR_CHECK(err_code);
+// }
+
+unsafe fn delete_bonds() {
+    let y = smooth_blue::pm_peers_delete();
+    assert_eq!(y, 0);
+}
+
+// static void pm_evt_handler(pm_evt_t const * p_evt)
+// {
+//     ret_code_t err_code;
+unsafe extern "C" fn pm_evt_handler(p_evt: *const smooth_blue::pm_evt_t) {
+    use smooth_blue::pm_evt_id_t::*;
+
+//     switch (p_evt->evt_id)
+//     {
+    match (*p_evt).evt_id {
+//         case PM_EVT_BONDED_PEER_CONNECTED:
+//         {
+//             NRF_LOG_INFO("Connected to a previously bonded device.\r\n");
+//         } break;
+        PM_EVT_BONDED_PEER_CONNECTED => {}, // todo log
+
+//         case PM_EVT_CONN_SEC_SUCCEEDED:
+//         {
+//             NRF_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.\r\n",
+//                          ble_conn_state_role(p_evt->conn_handle),
+//                          p_evt->conn_handle,
+//                          p_evt->params.conn_sec_succeeded.procedure);
+//         } break;
+        PM_EVT_CONN_SEC_SUCCEEDED => {}, // todo log
+
+//         case PM_EVT_CONN_SEC_FAILED:
+//         {
+//             /* Often, when securing fails, it shouldn't be restarted, for security reasons.
+//              * Other times, it can be restarted directly.
+//              * Sometimes it can be restarted, but only after changing some Security Parameters.
+//              * Sometimes, it cannot be restarted until the link is disconnected and reconnected.
+//              * Sometimes it is impossible, to secure the link, or the peer device does not support it.
+//              * How to handle this error is highly application dependent. */
+//         } break;
+        PM_EVT_CONN_SEC_FAILED => {}, // todo, error handling
+
+//         case PM_EVT_CONN_SEC_CONFIG_REQ:
+//         {
+//             // Reject pairing request from an already bonded peer.
+//             pm_conn_sec_config_t conn_sec_config = {.allow_repairing = false};
+//             pm_conn_sec_config_reply(p_evt->conn_handle, &conn_sec_config);
+//         } break;
+        PM_EVT_CONN_SEC_CONFIG_REQ => {}, // todo, handle global interaction
+
+//         case PM_EVT_STORAGE_FULL:
+//         {
+//             // Run garbage collection on the flash.
+//             err_code = fds_gc();
+//             if (err_code == FDS_ERR_BUSY || err_code == FDS_ERR_NO_SPACE_IN_QUEUES)
+//             {
+//                 // Retry.
+//             }
+//             else
+//             {
+//                 APP_ERROR_CHECK(err_code);
+//             }
+//         } break;
+        PM_EVT_STORAGE_FULL => {
+            let y = smooth_blue::fds_gc();
+            // todo retry
+            assert_eq!(y, 0);
+        },
+
+//         case PM_EVT_PEERS_DELETE_SUCCEEDED:
+//         {
+//             advertising_start(false);
+//         } break;
+        PM_EVT_PEERS_DELETE_SUCCEEDED => {
+            advertising_start(false);
+        }
+
+//         case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
+//         {
+//             // The local database has likely changed, send service changed indications.
+//             pm_local_database_has_changed();
+//         } break;
+        PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED => {
+            smooth_blue::pm_local_database_has_changed();
+        },
+
+//         case PM_EVT_PEER_DATA_UPDATE_FAILED:
+//         {
+//             // Assert.
+//             APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
+//         } break;
+        PM_EVT_PEER_DATA_UPDATE_FAILED => {
+            // todo assert
+        },
+
+//         case PM_EVT_PEER_DELETE_FAILED:
+//         {
+//             // Assert.
+//             APP_ERROR_CHECK(p_evt->params.peer_delete_failed.error);
+//         } break;
+        PM_EVT_PEER_DELETE_FAILED => {
+            // todo assert
+        },
+
+//         case PM_EVT_PEERS_DELETE_FAILED:
+//         {
+//             // Assert.
+//             APP_ERROR_CHECK(p_evt->params.peers_delete_failed_evt.error);
+//         } break;
+        PM_EVT_PEERS_DELETE_FAILED => {
+            // todo assert
+        },
+
+//         case PM_EVT_ERROR_UNEXPECTED:
+//         {
+//             // Assert.
+//             APP_ERROR_CHECK(p_evt->params.error_unexpected.error);
+//         } break;
+        PM_EVT_ERROR_UNEXPECTED => {
+            // todo assert
+        },
+
+//         case PM_EVT_CONN_SEC_START:
+//         case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
+//         case PM_EVT_PEER_DELETE_SUCCEEDED:
+//         case PM_EVT_LOCAL_DB_CACHE_APPLIED:
+//         case PM_EVT_SERVICE_CHANGED_IND_SENT:
+//         case PM_EVT_SERVICE_CHANGED_IND_CONFIRMED:
+//         default:
+//             break;
+//     }
+        _ => {}
+    }
+
+
+
+
+// }
 }
