@@ -68,6 +68,8 @@ fn make_c_deps(outdir: &String) {
 }
 
 fn generate_ble(outdir: &String) {
+    // panic!(env::var("TARGET").unwrap());
+
     let bindings = Builder::default()
         .no_unstable_rust()
         .use_core()
@@ -213,7 +215,15 @@ fn generate_ble(outdir: &String) {
 
         .clang_arg("-fshort-enums") // grr
 
-        .clang_arg(env::var("TARGET").unwrap())
+        .clang_arg("-D__CMSIS_GCC_H")
+
+        // More structure alignment - not sure if either/both of these are necessary
+        // .clang_arg("-fpack-struct=4")
+        // .clang_arg("-fmax-type-align=4")
+        // .clang_arg("-m32")
+
+        .clang_arg(format!("--target={}", env::var("TARGET").unwrap()))
+        .clang_arg("-mcpu=cortex-m4")
 
         // some of the core.h doxygen comments fuck up the parser
         //   tracking issue: https://github.com/servo/rust-bindgen/issues/426

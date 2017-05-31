@@ -293,16 +293,26 @@ pub unsafe fn init_bt() {
     // #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)
     // #define MAX_CONN_PARAMS_UPDATE_COUNT    3
 
-    let cp_init = smooth_blue::ble_conn_params_init_t {
-        p_conn_params                  : core::ptr::null_mut(),
-        first_conn_params_update_delay : (5 * 32768),
-        next_conn_params_update_delay  : (30 * 32768),
-        max_conn_params_update_count   : 3,
-        start_on_notify_cccd_handle    : smooth_blue::BLE_GATT_HANDLE_INVALID as u16,
-        disconnect_on_fail             : false,
-        evt_handler                    : Some(on_conn_params_evt),
-        error_handler                  : Some(conn_params_error_handler),
-    };
+    // let cp_init = smooth_blue::ble_conn_params_init_t {
+    //     p_conn_params:                   core::ptr::null_mut(),
+    //     first_conn_params_update_delay:  (5 * 32768),
+    //     next_conn_params_update_delay:   (30 * 32768),
+    //     max_conn_params_update_count:    3,
+    //     start_on_notify_cccd_handle:     smooth_blue::BLE_GATT_HANDLE_INVALID as u16,
+    //     disconnect_on_fail:              false,
+    //     evt_handler:                     Some(on_conn_params_evt),
+    //     error_handler:                   Some(conn_params_error_handler),
+    // };
+
+    let mut cp_init = core::mem::zeroed::<smooth_blue::ble_conn_params_init_t>();
+    cp_init.p_conn_params                  = core::ptr::null_mut();
+    cp_init.first_conn_params_update_delay = (5 * 32768);
+    cp_init.next_conn_params_update_delay  = (30 * 32768);
+    cp_init.max_conn_params_update_count   = 3;
+    cp_init.start_on_notify_cccd_handle    = smooth_blue::BLE_GATT_HANDLE_INVALID as u16;
+    cp_init.disconnect_on_fail             = false;
+    cp_init.evt_handler                    = Some(on_conn_params_evt);
+    cp_init.error_handler                  = Some(conn_params_error_handler);
 
     //    err_code = ble_conn_params_init(&cp_init);
     //    APP_ERROR_CHECK(err_code);
@@ -380,11 +390,11 @@ pub unsafe fn init_bt() {
 }
 
 unsafe extern "C" fn bt_evt(p_ble_evt: *mut smooth_blue::ble_evt_t) {
-    bkpt!();
+    // bkpt!();
 }
 
 unsafe extern "C" fn sys_evt(evt_id: u32) {
-    bkpt!();
+    // bkpt!();
 }
 
 // static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
@@ -405,7 +415,7 @@ unsafe extern "C" fn sys_evt(evt_id: u32) {
 // }
 
 unsafe extern "C" fn on_adv_evt(ble_adv_evt: smooth_blue::ble_adv_evt_t) {
-    bkpt!();
+    // bkpt!();
     use smooth_blue::ble_adv_evt_t::*;
     use smooth_blue::bsp_indication_t::*;
 
@@ -434,7 +444,7 @@ unsafe extern "C" fn on_adv_evt(ble_adv_evt: smooth_blue::ble_adv_evt_t) {
 
 unsafe extern "C" fn on_conn_params_evt(p_evt: *mut smooth_blue::ble_conn_params_evt_t) {
     use smooth_blue::ble_conn_params_evt_type_t::*;
-    bkpt!();
+    // bkpt!();
 
     match (*p_evt).evt_type {
         BLE_CONN_PARAMS_EVT_FAILED => {
@@ -449,7 +459,7 @@ unsafe extern "C" fn on_conn_params_evt(p_evt: *mut smooth_blue::ble_conn_params
 //     APP_ERROR_HANDLER(nrf_error);
 // }
 unsafe extern "C" fn conn_params_error_handler(nrf_error: u32) {
-    bkpt!();
+    // bkpt!();
 }
 
 // static void sleep_mode_enter(void)
