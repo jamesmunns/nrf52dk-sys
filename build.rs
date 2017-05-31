@@ -126,6 +126,8 @@ fn generate_ble(outdir: &String) {
 static FILES: &[&str] = &[
     "./shims/shimmy.c",
 
+    "./nRF5-sdk/components/toolchain/gcc/gcc_startup_nrf51.S",
+
     "./nRF5-sdk/components/ble/ble_advertising/ble_advertising.c",
     "./nRF5-sdk/components/ble/common/ble_advdata.c",
     "./nRF5-sdk/components/ble/common/ble_conn_params.c",
@@ -320,4 +322,5 @@ static DEFINES: &[(&str, Option<&str>)] = &[
     ("S132", None),
     ("SOFTDEVICE_PRESENT", None),
     ("SWI_DISABLE0", None),
+    ("__START", Some("main")),
 ];
