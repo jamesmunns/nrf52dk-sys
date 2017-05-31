@@ -12,6 +12,7 @@ r0 = "0.2.0"
 [build-dependencies]
 bindgen = {git = "https://github.com/servo/rust-bindgen", rev = "master"}
 glob = "*"
+gcc = "0.3.46"
 
 # [features]
 # testing_only_llvm_stable = ["bindgen/testing_only_llvm_stable"]
