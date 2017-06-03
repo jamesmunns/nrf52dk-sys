@@ -4,3 +4,4 @@ target
 *.hex
 *.elf
 *.a
+*.bk

@@ -1,4 +1,0 @@
-# Todo AJM
-GNU_INSTALL_ROOT := /gcc-arm-none-eabi-6-2017-q1-update
-GNU_VERSION := 6.3.1
-GNU_PREFIX := arm-none-eabi
