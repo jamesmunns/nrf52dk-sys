@@ -9,9 +9,10 @@
 #[macro_use]
 extern crate smooth_blue;
 
+static NAME: &str = "RUST-BLE";
+
 #[no_mangle]
 pub unsafe extern "C" fn main() {
-    // println!("Hello, world!");
     // Basic test that I can call the C code (and it is linked correctly)
     // NOTE: this probably still isn't a good test until I can verify linking
     let mut x = 0;
@@ -20,6 +21,22 @@ pub unsafe extern "C" fn main() {
 
     x = smooth_blue::app_timer_init();
     assert_eq!(x, 0);
+
+   // ret_code_t err_code;
+   // bsp_event_t startup_event;
+   let mut startup_event: smooth_blue::bsp_event_t = smooth_blue::bsp_event_t::BSP_EVENT_NOTHING;
+
+   // err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, bsp_event_handler);
+   // APP_ERROR_CHECK(err_code);
+   x = smooth_blue::bsp_init(smooth_blue::BSP_INIT_LED | smooth_blue::BSP_INIT_BUTTONS, Some(bsp_event_handler));
+   assert_eq!(x, 0);
+
+   // err_code = bsp_btn_ble_init(NULL, &startup_event);
+   // APP_ERROR_CHECK(err_code);
+   x = smooth_blue::bsp_btn_ble_init(None, &mut startup_event);
+   assert_eq!(x, 0);
+
+   // *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 
     init_bt();
 
@@ -37,12 +54,6 @@ pub unsafe extern "C" fn main() {
             x as usize;
         }
     }
-
-    // x = bsp_init(smooth_blue::BSP_INIT_LED | smooth_blue::BSP_INIT_BUTTONS, 0);
-
-    // x = bsp_btn_ble_init(0, 0);
-
-    // g_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 
 }
 
@@ -81,8 +92,7 @@ pub unsafe fn init_bt() {
     //         //                                    EVT_HANDLER);                                           \
     //         // APP_ERROR_CHECK(ERR_CODE);
     let mut event_buffer: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
-    let y = smooth_blue::softdevice_handler_init(&mut clk_cfg as
-                                                 *mut smooth_blue::nrf_clock_lf_cfg_t,
+    let y = smooth_blue::softdevice_handler_init(&mut clk_cfg,
                                                  &mut event_buffer[0] as *mut _ as
                                                  *mut smooth_blue::ctypes::c_void,
                                                  88,
@@ -164,15 +174,17 @@ pub unsafe fn init_bt() {
     sec_mode.set_sm(1);
     sec_mode.set_lv(1);
 
+    // SAT: TODO, check bitfield contents
+
     //    err_code = sd_ble_gap_device_name_set(&sec_mode,
     //                                          (const uint8_t *)DEVICE_NAME,
     //                                          strlen(DEVICE_NAME));
     //    APP_ERROR_CHECK(err_code);
 
-    let name = "RUST-BLE\0";
+
     let y = smooth_blue::sd_ble_gap_device_name_set(&mut sec_mode,
-                                                    name.as_bytes().as_ptr(),
-                                                    name.len() as u16);
+                                                    NAME.as_ptr(),
+                                                    NAME.len() as u16);
     assert_eq!(0, y);
 
     //    /* YOUR_JOB: Use an appearance value matching the application's use case.
@@ -248,7 +260,7 @@ pub unsafe fn init_bt() {
     advdata.include_appearance = true;
     advdata.flags = smooth_blue::BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE as u8;
     advdata.uuids_complete.uuid_cnt = m_adv_uuids.len() as u16;
-    advdata.uuids_complete.p_uuids = &mut m_adv_uuids[0];
+    advdata.uuids_complete.p_uuids = m_adv_uuids.as_mut_ptr();
 
     //    #define APP_ADV_INTERVAL                64
     //    #define APP_ADV_TIMEOUT_IN_SECONDS      180
@@ -263,9 +275,9 @@ pub unsafe fn init_bt() {
 
     //    err_code = ble_advertising_init(&advdata, NULL, &options, on_adv_evt, NULL);
     //    APP_ERROR_CHECK(err_code);
-    let y = smooth_blue::ble_advertising_init(&advdata,
+    let y = smooth_blue::ble_advertising_init(&mut advdata,
                                               core::ptr::null(),
-                                              &options,
+                                              &mut options,
                                               Some(on_adv_evt),
                                               None);
     assert_eq!(0, y);
@@ -306,8 +318,8 @@ pub unsafe fn init_bt() {
 
     let mut cp_init = core::mem::zeroed::<smooth_blue::ble_conn_params_init_t>();
     cp_init.p_conn_params                  = core::ptr::null_mut();
-    cp_init.first_conn_params_update_delay = (5 * 32768);
-    cp_init.next_conn_params_update_delay  = (30 * 32768);
+    cp_init.first_conn_params_update_delay = 5 * 32768;
+    cp_init.next_conn_params_update_delay  = 30 * 32768;
     cp_init.max_conn_params_update_count   = 3;
     cp_init.start_on_notify_cccd_handle    = smooth_blue::BLE_GATT_HANDLE_INVALID as u16;
     cp_init.disconnect_on_fail             = false;
@@ -316,7 +328,7 @@ pub unsafe fn init_bt() {
 
     //    err_code = ble_conn_params_init(&cp_init);
     //    APP_ERROR_CHECK(err_code);
-    let y = smooth_blue::ble_conn_params_init(&cp_init);
+    let y = smooth_blue::ble_conn_params_init(&mut cp_init);
     assert_eq!(y, 0);
 
     // peer_manager_init()
@@ -387,6 +399,11 @@ pub unsafe fn init_bt() {
 
     // }
 
+}
+
+// static void bsp_event_handler(bsp_event_t event)
+unsafe extern "C" fn bsp_event_handler(event: smooth_blue::bsp_event_t) {
+    bkpt!();
 }
 
 unsafe extern "C" fn bt_evt(p_ble_evt: *mut smooth_blue::ble_evt_t) {

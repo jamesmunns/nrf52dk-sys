@@ -18,9 +18,11 @@ fn main() {
     //   the whole C + bindings component
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=bindings.h");
+    println!("cargo:rerun-if-changed=memory.x");
+
+    // TODO: glob all contents of folders, as cargo doesn't traverse
     println!("cargo:rerun-if-changed=nRF5-sdk");
     println!("cargo:rerun-if-changed=shims");
-    println!("cargo:rerun-if-changed=memory.x");
 
     process_map_file(&outdir);
     generate_ble(&outdir);
@@ -322,5 +324,4 @@ static DEFINES: &[(&str, Option<&str>)] = &[
     ("S132", None),
     ("SOFTDEVICE_PRESENT", None),
     ("SWI_DISABLE0", None),
-    ("__START", Some("main")),
 ];
