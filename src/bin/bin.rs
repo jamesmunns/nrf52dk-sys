@@ -14,6 +14,10 @@ use smooth_blue as nrf;
 
 static NAME: &str = "RUST-BLE";
 static mut EVENT_BUFFER: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
+static mut M_CONN_HANDLE: u16 = nrf::BLE_CONN_HANDLE_INVALID as u16;
+const APP_FEATURE_NOT_SUPPORTED: u16 = nrf::BLE_GATT_STATUS_ATTERR_APP_BEGIN as u16 + 2;
+
+// static mut M_GATT : nrf_ble_gatt_t = unsafe {core::mem::zeroed::<nrf_ble_gatt_t>()};
 static mut M_GATT: nrf::nrf_ble_gatt_t = nrf::nrf_ble_gatt_t {
     att_mtu_desired_periph: 0,
     att_mtu_desired_central: 0,
@@ -36,13 +40,16 @@ static mut M_GATT: nrf::nrf_ble_gatt_t = nrf::nrf_ble_gatt_t {
             }],
     evt_handler: None,
 };
-// static mut M_GATT : nrf_ble_gatt_t = unsafe {core::mem::zeroed::<nrf_ble_gatt_t>()};
 
 static mut M_ADV_UUIDS: [nrf::ble_uuid_t; 1] =
     [nrf::ble_uuid_t {
          uuid: nrf::BLE_UUID_DEVICE_INFORMATION_SERVICE as u16,
          type_: nrf::BLE_UUID_TYPE_BLE as u8,
      }];
+
+unsafe fn nrf_log_info(output: &'static str) {
+    nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_ERROR as u8, output.as_ptr());
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
@@ -65,10 +72,14 @@ pub unsafe extern "C" fn main() {
 
     advertising_start(true); // todo don't always erase bonds
 
+
+
     // Mimic example
     loop {
         if !nrf::nrf_log_frontend_dequeue() {
-            assert_eq!(0, nrf::sd_app_evt_wait());
+            smooth_blue::nrf_log_frontend_std_0(smooth_blue::NRF_LOG_LEVEL_ERROR as u8,
+                                                    "hello world\r\n\0".as_ptr());
+            nrf::sd_app_evt_wait();
         }
     }
 
@@ -91,21 +102,15 @@ unsafe fn timers_init() {
 
 /// Function for initializing buttons and leds.
 unsafe fn buttons_leds_init() {
-    let mut x;
-    // ret_code_t err_code;
-    // bsp_event_t startup_event;
+
     let mut startup_event: nrf::bsp_event_t = nrf::bsp_event_t::BSP_EVENT_NOTHING;
 
-    // err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, bsp_event_handler);
-    // APP_ERROR_CHECK(err_code);
-    x = nrf::bsp_init(nrf::BSP_INIT_LED | nrf::BSP_INIT_BUTTONS,
+    let err_code = nrf::bsp_init(nrf::BSP_INIT_LED | nrf::BSP_INIT_BUTTONS,
                       Some(bsp_event_handler));
-    assert_eq!(x, 0);
+    assert_eq!(err_code, 0);
 
-    // err_code = bsp_btn_ble_init(NULL, &startup_event);
-    // APP_ERROR_CHECK(err_code);
-    x = nrf::bsp_btn_ble_init(None, &mut startup_event);
-    assert_eq!(x, 0);
+    let err_code = nrf::bsp_btn_ble_init(None, &mut startup_event);
+    assert_eq!(err_code, 0);
 }
 
 /// Function for initializing the BLE stack.
@@ -159,11 +164,11 @@ unsafe fn ble_stack_init() {
     assert_eq!(0, err_code);
 
     // Register with the SoftDevice handler module for BLE events.
-    let err_code = nrf::softdevice_ble_evt_handler_set(Some(bt_evt));
+    let err_code = nrf::softdevice_ble_evt_handler_set(Some(ble_evt_dispatch));
     assert_eq!(0, err_code);
 
     // Register with the SoftDevice handler module for SYS events.
-    let err_code = nrf::softdevice_sys_evt_handler_set(Some(sys_evt));
+    let err_code = nrf::softdevice_sys_evt_handler_set(Some(sys_evt_dispatch));
     assert_eq!(0, err_code);
 }
 
@@ -292,33 +297,59 @@ unsafe fn application_timers_start() {
 
 // static void bsp_event_handler(bsp_event_t event)
 unsafe extern "C" fn bsp_event_handler(event: nrf::bsp_event_t) {
-    bkpt!();
+    use nrf::bsp_event_t::*;
+    match event {
+        BSP_EVENT_SLEEP => {
+            sleep_mode_enter();
+        }
+        BSP_EVENT_DISCONNECT => {
+            let err_code =
+                nrf::sd_ble_gap_disconnect(M_CONN_HANDLE,
+                                           nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8);
+            if err_code != nrf::NRF_ERROR_INVALID_STATE {
+                assert_eq!(0, err_code);
+            }
+        }
+        BSP_EVENT_WHITELIST_OFF => {
+            if M_CONN_HANDLE == nrf::BLE_CONN_HANDLE_INVALID as u16 {
+                let err_code = nrf::ble_advertising_restart_without_whitelist();
+                if err_code != nrf::NRF_ERROR_INVALID_STATE {
+                    assert_eq!(0, err_code);
+                }
+            }
+        }
+        _ => {}
+    };
 }
 
-unsafe extern "C" fn bt_evt(p_ble_evt: *mut nrf::ble_evt_t) {
-    bkpt!();
+unsafe extern "C" fn ble_evt_dispatch(p_ble_evt: *mut nrf::ble_evt_t) {
+    /** The Connection state module has to be fed BLE events in order to function correctly
+     * Remember to call ble_conn_state_on_ble_evt before calling any ble_conns_state_* functions. */
+    nrf::ble_conn_state_on_ble_evt(p_ble_evt);
+    nrf::pm_on_ble_evt(p_ble_evt);
+    nrf::ble_conn_params_on_ble_evt(p_ble_evt);
+    nrf::bsp_btn_ble_on_ble_evt(p_ble_evt);
+    on_ble_evt(p_ble_evt);
+    nrf::ble_advertising_on_ble_evt(p_ble_evt);
+    nrf::nrf_ble_gatt_on_ble_evt(&mut M_GATT, p_ble_evt);
+
+    /*YOUR_JOB add calls to _on_ble_evt functions from each service your application is using
+       ble_xxs_on_ble_evt(&m_xxs, p_ble_evt);
+       ble_yys_on_ble_evt(&m_yys, p_ble_evt);
+     */
 }
 
-unsafe extern "C" fn sys_evt(evt_id: u32) {
-    bkpt!();
-}
+/// Function for dispatching a system event to interested modules.
+unsafe extern "C" fn sys_evt_dispatch(evt_id: u32) {
+    // Dispatch the system event to the fstorage module, where it will be
+    // dispatched to the Flash Data Storage (FDS) module.
+    nrf::fs_sys_event_handler(evt_id);
 
-// static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
-// {
-//     uint32_t err_code;
-//     switch (ble_adv_evt)
-//     {
-//         case BLE_ADV_EVT_FAST:
-//             err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-//             APP_ERROR_CHECK(err_code);
-//             break;
-//         case BLE_ADV_EVT_IDLE:
-//             sleep_mode_enter();
-//             break;
-//         default:
-//             break;
-//     }
-// }
+    // Dispatch to the Advertising module last, since it will check if there are any
+    // pending flash operations in fstorage. Let fstorage process system events first,
+    // so that it can report correctly to the Advertising module.
+    nrf::ble_advertising_on_sys_evt(evt_id);
+}
 
 unsafe extern "C" fn on_adv_evt(ble_adv_evt: nrf::ble_adv_evt_t) {
     use nrf::ble_adv_evt_t::*;
@@ -336,50 +367,23 @@ unsafe extern "C" fn on_adv_evt(ble_adv_evt: nrf::ble_adv_evt_t) {
     }
 }
 
-// static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
-// {
-//     ret_code_t err_code;
-
-//     if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
-//     {
-//         err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
-//         APP_ERROR_CHECK(err_code);
-//     }
-// }
-
 unsafe extern "C" fn on_conn_params_evt(p_evt: *mut nrf::ble_conn_params_evt_t) {
     use nrf::ble_conn_params_evt_type_t::*;
-    bkpt!();
 
     match (*p_evt).evt_type {
         BLE_CONN_PARAMS_EVT_FAILED => {
-            // ?
+            let err_code = nrf::sd_ble_gap_disconnect(M_CONN_HANDLE,
+                                                      nrf::BLE_HCI_CONN_INTERVAL_UNACCEPTABLE as
+                                                      u8);
+            assert_eq!(0, err_code);
         }
         _ => {}
     }
 }
 
-// static void conn_params_error_handler(uint32_t nrf_error)
-// {
-//     APP_ERROR_HANDLER(nrf_error);
-// }
 unsafe extern "C" fn conn_params_error_handler(nrf_error: u32) {
-    bkpt!();
+    assert_eq!(0, nrf_error);
 }
-
-// static void sleep_mode_enter(void)
-// {
-//     uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-//     APP_ERROR_CHECK(err_code);
-
-//     // Prepare wakeup buttons.
-//     err_code = bsp_btn_ble_sleep_mode_prepare();
-//     APP_ERROR_CHECK(err_code);
-
-//     // Go to system-off mode (this function will not return; wakeup will cause a reset).
-//     err_code = sd_power_system_off();
-//     APP_ERROR_CHECK(err_code);
-// }
 
 unsafe fn sleep_mode_enter() {
     let y = nrf::bsp_indication_set(nrf::bsp_indication_t_BSP_INDICATE_IDLE);
@@ -392,19 +396,7 @@ unsafe fn sleep_mode_enter() {
     assert_eq!(0, y);
 }
 
-// advertising_start()
-//////////////////////////////////////////////////////////////////////////
-//    if (erase_bonds == true)
-//    {
-//        delete_bonds();
-//        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
-//    }
-//    else
-//    {
-//        ret_code_t err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-//
-//        APP_ERROR_CHECK(err_code);
-//    }
+/// Function for starting advertising.
 unsafe fn advertising_start(erase_bonds: bool) {
     if erase_bonds {
         delete_bonds();
@@ -416,150 +408,163 @@ unsafe fn advertising_start(erase_bonds: bool) {
     }
 }
 
-// static void delete_bonds(void)
-// {
-//     ret_code_t err_code;
-
-//     NRF_LOG_INFO("Erase bonds!\r\n");
-
-//     err_code = pm_peers_delete();
-//     APP_ERROR_CHECK(err_code);
-// }
-
 unsafe fn delete_bonds() {
+    nrf_log_info("Erase bonds!\r\n\0");
+
     let y = nrf::pm_peers_delete();
     assert_eq!(y, 0);
 }
 
-// static void pm_evt_handler(pm_evt_t const * p_evt)
-// {
-//     ret_code_t err_code;
 unsafe extern "C" fn pm_evt_handler(p_evt: *const nrf::pm_evt_t) {
     use nrf::pm_evt_id_t::*;
 
-    //     switch (p_evt->evt_id)
-    //     {
     match (*p_evt).evt_id {
-        //         case PM_EVT_BONDED_PEER_CONNECTED:
-        //         {
-        //             NRF_LOG_INFO("Connected to a previously bonded device.\r\n");
-        //         } break;
-        PM_EVT_BONDED_PEER_CONNECTED => {} // todo log
-
-        //         case PM_EVT_CONN_SEC_SUCCEEDED:
-        //         {
-        //             NRF_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.\r\n",
-        //                          ble_conn_state_role(p_evt->conn_handle),
-        //                          p_evt->conn_handle,
-        //                          p_evt->params.conn_sec_succeeded.procedure);
-        //         } break;
-        PM_EVT_CONN_SEC_SUCCEEDED => {} // todo log
-
-        //         case PM_EVT_CONN_SEC_FAILED:
-        //         {
-        //             /* Often, when securing fails, it shouldn't be restarted, for security reasons.
-        //              * Other times, it can be restarted directly.
-        //              * Sometimes it can be restarted, but only after changing some Security Parameters.
-        //              * Sometimes, it cannot be restarted until the link is disconnected and reconnected.
-        //              * Sometimes it is impossible, to secure the link, or the peer device does not support it.
-        //              * How to handle this error is highly application dependent. */
-        //         } break;
-        PM_EVT_CONN_SEC_FAILED => {} // todo, error handling
-
-        //         case PM_EVT_CONN_SEC_CONFIG_REQ:
-        //         {
-        //             // Reject pairing request from an already bonded peer.
-        //             pm_conn_sec_config_t conn_sec_config = {.allow_repairing = false};
-        //             pm_conn_sec_config_reply(p_evt->conn_handle, &conn_sec_config);
-        //         } break;
-        PM_EVT_CONN_SEC_CONFIG_REQ => {} // todo, handle global interaction
-
-        //         case PM_EVT_STORAGE_FULL:
-        //         {
-        //             // Run garbage collection on the flash.
-        //             err_code = fds_gc();
-        //             if (err_code == FDS_ERR_BUSY || err_code == FDS_ERR_NO_SPACE_IN_QUEUES)
-        //             {
-        //                 // Retry.
-        //             }
-        //             else
-        //             {
-        //                 APP_ERROR_CHECK(err_code);
-        //             }
-        //         } break;
-        PM_EVT_STORAGE_FULL => {
-            let y = nrf::fds_gc();
-            // todo retry
-            assert_eq!(y, 0);
+        PM_EVT_BONDED_PEER_CONNECTED => {
+            nrf_log_info("Connected to a previously bonded device.\r\n\0");
         }
 
-        //         case PM_EVT_PEERS_DELETE_SUCCEEDED:
-        //         {
-        //             advertising_start(false);
-        //         } break;
+        PM_EVT_CONN_SEC_SUCCEEDED => {
+            nrf_log_info("Connection secured...\r\n\0");
+        } // todo log better
+
+        PM_EVT_CONN_SEC_FAILED => {
+            // Often, when securing fails, it shouldn't be restarted, for security reasons.
+            // Other times, it can be restarted directly.
+            // Sometimes it can be restarted, but only after changing some Security Parameters.
+            // Sometimes, it cannot be restarted until the link is disconnected and reconnected.
+            // Sometimes it is impossible, to secure the link, or the peer device does not support it.
+            // How to handle this error is highly application dependent. */
+        }
+
+        PM_EVT_CONN_SEC_CONFIG_REQ => {
+            let mut conn_sec_config = nrf::pm_conn_sec_config_t { allow_repairing: false };
+
+            nrf::pm_conn_sec_config_reply((*p_evt).conn_handle, &mut conn_sec_config);
+        }
+
+        PM_EVT_STORAGE_FULL => {
+            let err_code = nrf::fds_gc();
+
+            if (err_code == nrf::FDS_ERR_BUSY as u32) ||
+               (err_code == nrf::FDS_ERR_NO_SPACE_IN_QUEUES as u32) {
+                // Retry
+            } else {
+                assert_eq!(err_code, 0);
+            }
+        }
+
         PM_EVT_PEERS_DELETE_SUCCEEDED => {
             advertising_start(false);
         }
 
-        //         case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
-        //         {
-        //             // The local database has likely changed, send service changed indications.
-        //             pm_local_database_has_changed();
-        //         } break;
         PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED => {
+            // The local database has likely changed, send service changed indications.
             nrf::pm_local_database_has_changed();
         }
 
-        //         case PM_EVT_PEER_DATA_UPDATE_FAILED:
-        //         {
-        //             // Assert.
-        //             APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
-        //         } break;
         PM_EVT_PEER_DATA_UPDATE_FAILED => {
-            // todo assert
+            // Assert.
+            // AJM - union read example here!
+            assert_eq!(0, (*p_evt).params.peer_data_update_failed.as_ref().error);
         }
 
-        //         case PM_EVT_PEER_DELETE_FAILED:
-        //         {
-        //             // Assert.
-        //             APP_ERROR_CHECK(p_evt->params.peer_delete_failed.error);
-        //         } break;
         PM_EVT_PEER_DELETE_FAILED => {
-            // todo assert
+            // Assert.
+            assert_eq!(0, (*p_evt).params.peer_delete_failed.as_ref().error);
         }
 
-        //         case PM_EVT_PEERS_DELETE_FAILED:
-        //         {
-        //             // Assert.
-        //             APP_ERROR_CHECK(p_evt->params.peers_delete_failed_evt.error);
-        //         } break;
         PM_EVT_PEERS_DELETE_FAILED => {
-            // todo assert
+            // Assert.
+            assert_eq!(0, (*p_evt).params.peers_delete_failed_evt.as_ref().error);
         }
 
-        //         case PM_EVT_ERROR_UNEXPECTED:
-        //         {
-        //             // Assert.
-        //             APP_ERROR_CHECK(p_evt->params.error_unexpected.error);
-        //         } break;
         PM_EVT_ERROR_UNEXPECTED => {
-            // todo assert
+            // Assert.
+            assert_eq!(0, (*p_evt).params.error_unexpected.as_ref().error);
         }
 
-        //         case PM_EVT_CONN_SEC_START:
-        //         case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
-        //         case PM_EVT_PEER_DELETE_SUCCEEDED:
-        //         case PM_EVT_LOCAL_DB_CACHE_APPLIED:
-        //         case PM_EVT_SERVICE_CHANGED_IND_SENT:
-        //         case PM_EVT_SERVICE_CHANGED_IND_CONFIRMED:
-        //         default:
-        //             break;
-        //     }
         _ => {}
     }
+}
 
+/// Function for handling the Application's BLE Stack events.
+unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
+    use nrf::BLE_GAP_EVTS::*;
+    use nrf::BLE_GATTC_EVTS::*;
+    use nrf::BLE_GATTS_EVTS::*;
+    use nrf::BLE_COMMON_EVTS::*;
 
+    let x = (*p_ble_evt).header.evt_id;
 
+    // We can't use a match here because the nordic mixes enum types :(
+    if x == BLE_GAP_EVT_DISCONNECTED as u16 {
+        nrf_log_info("Disconnected.\r\n\0");
 
-    // }
+        let err_code = nrf::bsp_indication_set(nrf::bsp_indication_t_BSP_INDICATE_IDLE);
+        assert_eq!(0, err_code);
+    } else if x == BLE_GAP_EVT_CONNECTED as u16 {
+        nrf_log_info("Connected.\r\n\0");
+        let err_code = nrf::bsp_indication_set(nrf::bsp_indication_t::BSP_INDICATE_CONNECTED);
+        assert_eq!(0, err_code);
+        M_CONN_HANDLE = (*p_ble_evt).evt.gap_evt.as_ref().conn_handle;
+    } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
+        nrf_log_info("GATT Client Timeout.\r\n\0");
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+                                                  nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
+                                                  u8);
+        assert_eq!(0, err_code);
+    } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
+        nrf_log_info("GATT Client Timeout.\r\n\0");
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+                                                  nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
+                                                  u8);
+        assert_eq!(0, err_code);
+    } else if x == BLE_GATTS_EVT_TIMEOUT as u16 {
+        nrf_log_info("GATT Server Timeout.\r\n\0");
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gatts_evt.as_ref().conn_handle,
+                                                  nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
+                                                  u8);
+        assert_eq!(0, err_code);
+    } else if x == BLE_EVT_USER_MEM_REQUEST as u16 {
+        let err_code = nrf::sd_ble_user_mem_reply((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+                                                  core::ptr::null());
+        assert_eq!(0, err_code);
+    } else if x == BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST as u16 {
+        let req = (*p_ble_evt)
+            .evt
+            .gatts_evt
+            .as_ref()
+            .params
+            .authorize_request
+            .as_ref();
+
+        if req.type_ != nrf::BLE_GATTS_AUTHORIZE_TYPE_INVALID as u8 {
+            let op = req.request.write.as_ref().op;
+            if (op == nrf::BLE_GATTS_OP_PREP_WRITE_REQ as u8) ||
+               (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_NOW as u8) ||
+               (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_CANCEL as u8) {
+                let mut auth_reply =
+                    core::mem::zeroed::<nrf::ble_gatts_rw_authorize_reply_params_t>();
+
+                auth_reply.type_ = if req.type_ == nrf::BLE_GATTS_AUTHORIZE_TYPE_WRITE as u8 {
+                    nrf::BLE_GATTS_AUTHORIZE_TYPE_WRITE as u8
+                } else {
+                    nrf::BLE_GATTS_AUTHORIZE_TYPE_READ as u8
+                };
+
+                auth_reply.params.write.as_mut().gatt_status = APP_FEATURE_NOT_SUPPORTED;
+
+                let err_code = nrf::sd_ble_gatts_rw_authorize_reply((*p_ble_evt)
+                                                                        .evt
+                                                                        .gatts_evt
+                                                                        .as_ref()
+                                                                        .conn_handle,
+                                                                    &auth_reply);
+                assert_eq!(0, err_code);
+
+            }
+        }
+    } else {
+        // No implementation needed.
+    }
 }

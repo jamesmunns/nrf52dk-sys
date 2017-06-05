@@ -87,6 +87,7 @@ fn generate_ble(outdir: &String) {
     cmd.arg("--use-core");
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--no-unstable-rust");
+    cmd.arg("--with-derive-default");
 
     cmd.arg("--output");
     cmd.arg(out3.as_ref());
