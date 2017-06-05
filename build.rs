@@ -31,10 +31,7 @@ fn main() {
 
 fn process_map_file(outdir: &String) {
     let out = &PathBuf::from(outdir);
-    File::create(out.join("memory.x"))
-        .unwrap()
-        .write_all(include_bytes!("memory.x"))
-        .unwrap();
+    File::create(out.join("memory.x")).unwrap().write_all(include_bytes!("memory.x")).unwrap();
 
     println!("cargo:rustc-link-search={}", out.display());
 }
@@ -120,9 +117,7 @@ fn generate_ble(outdir: &String) {
     cmd.arg("-target");
     cmd.arg(env::var("TARGET").unwrap());
 
-    assert!(cmd.status()
-                .expect("failed to build Blue libs")
-                .success());
+    assert!(cmd.status().expect("failed to build Blue libs").success());
 }
 
 

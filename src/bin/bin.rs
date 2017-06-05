@@ -78,7 +78,7 @@ pub unsafe extern "C" fn main() {
     loop {
         if !nrf::nrf_log_frontend_dequeue() {
             smooth_blue::nrf_log_frontend_std_0(smooth_blue::NRF_LOG_LEVEL_ERROR as u8,
-                                                    "hello world\r\n\0".as_ptr());
+                                                "hello world\r\n\0".as_ptr());
             nrf::sd_app_evt_wait();
         }
     }
@@ -106,7 +106,7 @@ unsafe fn buttons_leds_init() {
     let mut startup_event: nrf::bsp_event_t = nrf::bsp_event_t::BSP_EVENT_NOTHING;
 
     let err_code = nrf::bsp_init(nrf::BSP_INIT_LED | nrf::BSP_INIT_BUTTONS,
-                      Some(bsp_event_handler));
+                                 Some(bsp_event_handler));
     assert_eq!(err_code, 0);
 
     let err_code = nrf::bsp_btn_ble_init(None, &mut startup_event);
@@ -140,15 +140,18 @@ unsafe fn ble_stack_init() {
     assert_eq!(0, err_code);
 
     // Overwrite some of the default configurations for the BLE stack.
-    let mut ble_cfg = core::mem::zeroed::<nrf::ble_cfg_t>();
+    let mut ble_cfg = nrf::ble_cfg_t::default();
     let err_code = nrf::sd_ble_cfg_set(nrf::BLE_COMMON_CFGS::BLE_COMMON_CFG_VS_UUID as u32,
                                        &mut ble_cfg,
                                        ram_start);
     assert_eq!(0, err_code);
 
     // Configure the maximum number of connections.
-    let mut ble_cfg = core::mem::zeroed::<nrf::ble_cfg_t>();
-    *ble_cfg.gap_cfg.as_mut().role_count_cfg.as_mut() = nrf::ble_gap_cfg_role_count_t {
+    let mut ble_cfg = nrf::ble_cfg_t::default();
+    *ble_cfg.gap_cfg
+         .as_mut()
+         .role_count_cfg
+         .as_mut() = nrf::ble_gap_cfg_role_count_t {
         periph_role_count: nrf::BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT as u8,
         central_role_count: 0,
         central_sec_count: 0,
@@ -179,7 +182,7 @@ unsafe fn ble_stack_init() {
 ///
 unsafe fn gap_params_init() {
     // NOTE: Same as BLE_GAP_CONN_SEC_MODE_SET_OPEN macro
-    let mut sec_mode = core::mem::zeroed::<nrf::ble_gap_conn_sec_mode_t>();
+    let mut sec_mode = nrf::ble_gap_conn_sec_mode_t::default();
     sec_mode.set_sm(1);
     sec_mode.set_lv(1);
 
@@ -214,7 +217,7 @@ unsafe fn gatt_init() {
 
 /// Function for initializing the Advertising functionality.
 unsafe fn advertising_init() {
-    let mut advdata = core::mem::zeroed::<nrf::ble_advdata_t>();
+    let mut advdata = nrf::ble_advdata_t::default();
 
     advdata.name_type = nrf::ble_advdata_name_type_t::BLE_ADVDATA_FULL_NAME;
     advdata.include_appearance = true;
@@ -222,7 +225,7 @@ unsafe fn advertising_init() {
     advdata.uuids_complete.uuid_cnt = M_ADV_UUIDS.len() as u16;
     advdata.uuids_complete.p_uuids = M_ADV_UUIDS.as_mut_ptr();
 
-    let mut options = core::mem::zeroed::<nrf::ble_adv_modes_config_t>();
+    let mut options = nrf::ble_adv_modes_config_t::default();
     options.ble_adv_fast_enabled = true;
     options.ble_adv_fast_interval = 64;
     options.ble_adv_fast_timeout = 180;
@@ -263,11 +266,11 @@ unsafe fn peer_manager_init() {
     let y = nrf::pm_init();
     assert_eq!(y, 0);
 
-    let mut kdist_own = core::mem::zeroed::<nrf::ble_gap_sec_kdist_t>();
+    let mut kdist_own = nrf::ble_gap_sec_kdist_t::default();
     kdist_own.set_enc(1);
     kdist_own.set_id(1);
 
-    let mut kdist_peer = core::mem::zeroed::<nrf::ble_gap_sec_kdist_t>();
+    let mut kdist_peer = nrf::ble_gap_sec_kdist_t::default();
     kdist_peer.set_enc(1);
     kdist_peer.set_id(1);
 
@@ -465,22 +468,42 @@ unsafe extern "C" fn pm_evt_handler(p_evt: *const nrf::pm_evt_t) {
         PM_EVT_PEER_DATA_UPDATE_FAILED => {
             // Assert.
             // AJM - union read example here!
-            assert_eq!(0, (*p_evt).params.peer_data_update_failed.as_ref().error);
+            assert_eq!(0,
+                       (*p_evt)
+                           .params
+                           .peer_data_update_failed
+                           .as_ref()
+                           .error);
         }
 
         PM_EVT_PEER_DELETE_FAILED => {
             // Assert.
-            assert_eq!(0, (*p_evt).params.peer_delete_failed.as_ref().error);
+            assert_eq!(0,
+                       (*p_evt)
+                           .params
+                           .peer_delete_failed
+                           .as_ref()
+                           .error);
         }
 
         PM_EVT_PEERS_DELETE_FAILED => {
             // Assert.
-            assert_eq!(0, (*p_evt).params.peers_delete_failed_evt.as_ref().error);
+            assert_eq!(0,
+                       (*p_evt)
+                           .params
+                           .peers_delete_failed_evt
+                           .as_ref()
+                           .error);
         }
 
         PM_EVT_ERROR_UNEXPECTED => {
             // Assert.
-            assert_eq!(0, (*p_evt).params.error_unexpected.as_ref().error);
+            assert_eq!(0,
+                       (*p_evt)
+                           .params
+                           .error_unexpected
+                           .as_ref()
+                           .error);
         }
 
         _ => {}
@@ -506,27 +529,47 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
         nrf_log_info("Connected.\r\n\0");
         let err_code = nrf::bsp_indication_set(nrf::bsp_indication_t::BSP_INDICATE_CONNECTED);
         assert_eq!(0, err_code);
-        M_CONN_HANDLE = (*p_ble_evt).evt.gap_evt.as_ref().conn_handle;
+        M_CONN_HANDLE = (*p_ble_evt)
+            .evt
+            .gap_evt
+            .as_ref()
+            .conn_handle;
     } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt)
+                                                      .evt
+                                                      .gattc_evt
+                                                      .as_ref()
+                                                      .conn_handle,
                                                   nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
                                                   u8);
         assert_eq!(0, err_code);
     } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt)
+                                                      .evt
+                                                      .gattc_evt
+                                                      .as_ref()
+                                                      .conn_handle,
                                                   nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
                                                   u8);
         assert_eq!(0, err_code);
     } else if x == BLE_GATTS_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Server Timeout.\r\n\0");
-        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gatts_evt.as_ref().conn_handle,
+        let err_code = nrf::sd_ble_gap_disconnect((*p_ble_evt)
+                                                      .evt
+                                                      .gatts_evt
+                                                      .as_ref()
+                                                      .conn_handle,
                                                   nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as
                                                   u8);
         assert_eq!(0, err_code);
     } else if x == BLE_EVT_USER_MEM_REQUEST as u16 {
-        let err_code = nrf::sd_ble_user_mem_reply((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        let err_code = nrf::sd_ble_user_mem_reply((*p_ble_evt)
+                                                      .evt
+                                                      .gattc_evt
+                                                      .as_ref()
+                                                      .conn_handle,
                                                   core::ptr::null());
         assert_eq!(0, err_code);
     } else if x == BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST as u16 {
@@ -539,12 +582,14 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
             .as_ref();
 
         if req.type_ != nrf::BLE_GATTS_AUTHORIZE_TYPE_INVALID as u8 {
-            let op = req.request.write.as_ref().op;
+            let op = req.request
+                .write
+                .as_ref()
+                .op;
             if (op == nrf::BLE_GATTS_OP_PREP_WRITE_REQ as u8) ||
                (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_NOW as u8) ||
                (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_CANCEL as u8) {
-                let mut auth_reply =
-                    core::mem::zeroed::<nrf::ble_gatts_rw_authorize_reply_params_t>();
+                let mut auth_reply = nrf::ble_gatts_rw_authorize_reply_params_t::default();
 
                 auth_reply.type_ = if req.type_ == nrf::BLE_GATTS_AUTHORIZE_TYPE_WRITE as u8 {
                     nrf::BLE_GATTS_AUTHORIZE_TYPE_WRITE as u8
@@ -552,7 +597,10 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
                     nrf::BLE_GATTS_AUTHORIZE_TYPE_READ as u8
                 };
 
-                auth_reply.params.write.as_mut().gatt_status = APP_FEATURE_NOT_SUPPORTED;
+                auth_reply.params
+                    .write
+                    .as_mut()
+                    .gatt_status = APP_FEATURE_NOT_SUPPORTED;
 
                 let err_code = nrf::sd_ble_gatts_rw_authorize_reply((*p_ble_evt)
                                                                         .evt
