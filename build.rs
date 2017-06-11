@@ -54,9 +54,6 @@ fn make_c_deps(outdir: &String) {
         config.file(f);
     }
 
-    // FIXME sdk_config.h shouldn't be hardcoded
-    config.include("./shims");
-
     // Then the rest
     for i in INCLUDE_PATHS {
         config.include(i);
@@ -108,9 +105,6 @@ fn generate_ble(outdir: &String) {
     for inc in INCLUDE_PATHS {
         cmd.arg(format!("-I{}", inc));
     }
-
-    // Hack includes to make bindgen work
-    cmd.arg("-I.");
 
     // Final Clang args
     cmd.arg("-fshort-enums");
@@ -172,7 +166,8 @@ static FILES: &[&str] = &["./shims/shimmy.c",
                           "./nRF5-sdk/external/segger_rtt/SEGGER_RTT.c",
                           "./nRF5-sdk/external/segger_rtt/SEGGER_RTT_printf.c"];
 
-static INCLUDE_PATHS: &[&str] = &["./",
+static INCLUDE_PATHS: &[&str] = &["./shims", // FIXME sdk_config.h shouldn't be hardcoded
+
                                   "./nRF5-sdk/components",
                                   "./nRF5-sdk/components/ble/ble_advertising",
                                   "./nRF5-sdk/components/ble/ble_dtm",
@@ -279,20 +274,16 @@ static INCLUDE_PATHS: &[&str] = &["./",
 
 static FLAGS: &[&str] = &[
     "-std=c99",
-    "-mcpu=cortex-m4", //
-    "-mthumb", //
-    "-mabi=aapcs", //
-    "-mfloat-abi=hard", //
+    "-mcpu=cortex-m4",
+    "-mthumb",
+    "-mabi=aapcs",
+    "-mfloat-abi=hard",
     "-mfpu=fpv4-sp-d16",
-    "-ffunction-sections", //
-    "-fdata-sections", //
-    "-fno-strict-aliasing", //
-    "-fno-builtin", //
-    "--short-enums", //
-
-    // "-Wall",
-    // "-Werror",
-    // "-O3",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-fno-strict-aliasing",
+    "-fno-builtin",
+    "--short-enums",
 ];
 
 static DEFINES: &[(&str, Option<&str>)] = &[("BLE_STACK_SUPPORT_REQD", None),

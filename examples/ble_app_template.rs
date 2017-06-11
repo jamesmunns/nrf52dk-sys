@@ -5,7 +5,7 @@
 
 // TODO: remove?
 // #![allow(dead_code, unused_imports, unused_assignments, unused_variables)]
-#![allow(unused_variables)]
+// #![allow(unused_variables)]
 
 #[macro_use]
 extern crate smooth_blue;
@@ -14,7 +14,8 @@ use nrf::check;
 
 
 static NAME: &str = "RUST-BLE";
-static mut EVENT_BUFFER: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
+
+static mut EVENT_BUFFER: [u8; 300] = [0; 300]; // 64 + 23 = 87, rounded up to next word
 static mut M_CONN_HANDLE: u16 = nrf::BLE_CONN_HANDLE_INVALID as u16;
 const APP_FEATURE_NOT_SUPPORTED: u16 = nrf::BLE_GATT_STATUS_ATTERR_APP_BEGIN as u16 + 2;
 
@@ -49,16 +50,18 @@ static mut M_ADV_UUIDS: [nrf::ble_uuid_t; 1] =
      }];
 
 unsafe fn nrf_log_info(output: &'static str) {
-    nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_ERROR as u8, output.as_ptr());
+    // nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_ERROR as u8, output.as_ptr());
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
 
+    let mut erase_bonds = false;
+
     // BSP Init
-    log_init();
+    // log_init();
     timers_init();
-    buttons_leds_init();
+    buttons_leds_init(&mut erase_bonds);
 
     // BLE Init
     ble_stack_init();
@@ -71,17 +74,17 @@ pub unsafe extern "C" fn main() {
 
     application_timers_start();
 
-    advertising_start(true); // todo don't always erase bonds
+    advertising_start(erase_bonds); // todo don't always erase bonds
 
 
 
     // Mimic example
     loop {
-        if !nrf::nrf_log_frontend_dequeue() {
-            smooth_blue::nrf_log_frontend_std_0(smooth_blue::NRF_LOG_LEVEL_ERROR as u8,
-                                                "hello world\r\n\0".as_ptr());
+        // if !nrf::nrf_log_frontend_dequeue() {
+        //     smooth_blue::nrf_log_frontend_std_0(smooth_blue::NRF_LOG_LEVEL_ERROR as u8,
+        //                                         "hello world\r\n\0".as_ptr());
             nrf::sd_app_evt_wait();
-        }
+        // }
     }
 
 }
@@ -100,7 +103,7 @@ unsafe fn timers_init() {
 }
 
 /// Function for initializing buttons and leds.
-unsafe fn buttons_leds_init() {
+unsafe fn buttons_leds_init(erase_bonds: &mut bool) {
 
     let mut startup_event: nrf::bsp_event_t = nrf::bsp_event_t::BSP_EVENT_NOTHING;
 
@@ -109,6 +112,8 @@ unsafe fn buttons_leds_init() {
             .unwrap();
 
     check(nrf::bsp_btn_ble_init(None, &mut startup_event)).unwrap();
+
+    *erase_bonds = startup_event == nrf::bsp_event_t::BSP_EVENT_CLEAR_BONDING_DATA;
 }
 
 /// Function for initializing the BLE stack.
@@ -118,16 +123,11 @@ unsafe fn buttons_leds_init() {
 unsafe fn ble_stack_init() {
 
     // Initialize the SoftDevice handler module.
-    let mut clk_cfg = nrf::nrf_clock_lf_cfg_t {
-        source: nrf::NRF_CLOCK_LF_SRC_XTAL as u8,
-        rc_ctiv: 0,
-        rc_temp_ctiv: 0,
-        xtal_accuracy: nrf::NRF_CLOCK_LF_XTAL_ACCURACY_20_PPM as u8,
-    };
+    let mut clk_cfg = nrf::_NRF_CLOCK_LFCLKSRC();
 
     check(nrf::softdevice_handler_init(&mut clk_cfg,
                                        EVENT_BUFFER.as_mut_ptr() as *mut nrf::ctypes::c_void,
-                                       88,
+                                       EVENT_BUFFER.len() as u16,
                                        None))
             .unwrap();
 
@@ -347,10 +347,10 @@ unsafe extern "C" fn on_adv_evt(ble_adv_evt: nrf::ble_adv_evt_t) {
 
     match ble_adv_evt {
         BLE_ADV_EVT_FAST => {
-            check(nrf::bsp_indication_set(BSP_INDICATE_ADVERTISING)).unwrap();
+            // check(nrf::bsp_indication_set(BSP_INDICATE_ADVERTISING)).unwrap();
         }
         BLE_ADV_EVT_IDLE => {
-            sleep_mode_enter();
+            // sleep_mode_enter();
         }
         _ => {}
     }

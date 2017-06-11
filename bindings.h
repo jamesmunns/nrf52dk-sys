@@ -40,3 +40,7 @@
 
 #include "ble_advdata.h"
 #include "bsp.h"
+
+// More examples
+#include "nrf_delay.h"
+#include "shims.h"
