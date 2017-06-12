@@ -24,16 +24,24 @@ fn main() {
     println!("cargo:rerun-if-changed=nRF5-sdk");
     println!("cargo:rerun-if-changed=shims");
 
-    process_map_file(&outdir);
+    process_linker_file(&outdir);
     generate_ble(&outdir);
     make_c_deps(&outdir);
 }
 
-fn process_map_file(outdir: &String) {
+fn process_linker_file(outdir: &String) {
     let out = &PathBuf::from(outdir);
-    File::create(out.join("memory.x"))
+
+    // Copy over the target specific linker script
+    File::create(out.join("nrf52dk-sys.ld"))
         .unwrap()
-        .write_all(include_bytes!("memory.x"))
+        .write_all(include_bytes!("nrf52dk-sys.ld"))
+        .unwrap();
+
+    // Also copy the nrf general linker script
+    File::create(out.join("nrf5x_common.ld"))
+        .unwrap()
+        .write_all(include_bytes!("nrf5x_common.ld"))
         .unwrap();
 
     println!("cargo:rustc-link-search={}", out.display());

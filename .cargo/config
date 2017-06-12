@@ -1,7 +1,7 @@
 [target.thumbv7em-none-eabihf]
 rustflags = [
     "-C", "link-arg=-mthumb",
-    "-C", "link-arg=-Tmemory.x",
+    "-C", "link-arg=-Tnrf52dk-sys.ld",
     "-C", "link-arg=-mcpu=cortex-m4",
     "-C", "link-arg=--specs=nano.specs",
 
