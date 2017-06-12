@@ -53,4 +53,11 @@ pub mod ctypes {
     pub type c_char = u8;
 }
 
+pub fn check(ec: u32) -> Result<(), ()> {
+    match ec {
+        0 => Ok(()),
+        _ => Err(()),
+    }
+}
+
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
