@@ -31,7 +31,10 @@ fn main() {
 
 fn process_map_file(outdir: &String) {
     let out = &PathBuf::from(outdir);
-    File::create(out.join("memory.x")).unwrap().write_all(include_bytes!("memory.x")).unwrap();
+    File::create(out.join("memory.x"))
+        .unwrap()
+        .write_all(include_bytes!("memory.x"))
+        .unwrap();
 
     println!("cargo:rustc-link-search={}", out.display());
 }
@@ -111,13 +114,15 @@ fn generate_ble(outdir: &String) {
     cmd.arg("-target");
     cmd.arg(env::var("TARGET").unwrap());
 
-    assert!(cmd.status().expect("failed to build Blue libs").success());
+    assert!(cmd.status()
+                .expect("failed to build Blue libs")
+                .success());
 }
 
 
 static FILES: &[&str] = &["./shims/shimmy.c",
 
-                          "./nRF5-sdk/components/toolchain/gcc/gcc_startup_nrf51.S",
+                          "./nRF5-sdk/components/toolchain/gcc/gcc_startup_nrf52.S",
 
                           "./nRF5-sdk/components/ble/ble_advertising/ble_advertising.c",
                           "./nRF5-sdk/components/ble/common/ble_advdata.c",
@@ -272,19 +277,17 @@ static INCLUDE_PATHS: &[&str] = &["./shims", // FIXME sdk_config.h shouldn't be 
                                   "./nRF5-sdk/components/toolchain/gcc",
                                   "./nRF5-sdk/external/segger_rtt"];
 
-static FLAGS: &[&str] = &[
-    "-std=c99",
-    "-mcpu=cortex-m4",
-    "-mthumb",
-    "-mabi=aapcs",
-    "-mfloat-abi=hard",
-    "-mfpu=fpv4-sp-d16",
-    "-ffunction-sections",
-    "-fdata-sections",
-    "-fno-strict-aliasing",
-    "-fno-builtin",
-    "--short-enums",
-];
+static FLAGS: &[&str] = &["-std=c99",
+                          "-mcpu=cortex-m4",
+                          "-mthumb",
+                          "-mabi=aapcs",
+                          "-mfloat-abi=hard",
+                          "-mfpu=fpv4-sp-d16",
+                          "-ffunction-sections",
+                          "-fdata-sections",
+                          "-fno-strict-aliasing",
+                          "-fno-builtin",
+                          "--short-enums"];
 
 static DEFINES: &[(&str, Option<&str>)] = &[("BLE_STACK_SUPPORT_REQD", None),
                                             ("BOARD_PCA10040", None),

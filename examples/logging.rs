@@ -12,13 +12,14 @@ pub unsafe extern "C" fn main() {
 
     nrf::bsp_board_leds_init();
     nrf::check(nrf::nrf_log_init(None)).unwrap();
-    // nrf::check(nrf::app_timer_init()).unwrap();
+    nrf::check(nrf::app_timer_init()).unwrap();
 
     loop {
         for led in 0..nrf::LEDS_NUMBER {
             nrf::bsp_board_led_invert(led);
             nrf::_nrf_delay_ms(500);
             log_str("INFO: this is a test\r\n\x00");
+            nrf::sd_app_evt_wait();
             process_log();
         }
     }
@@ -26,9 +27,10 @@ pub unsafe extern "C" fn main() {
 
 unsafe fn process_log() {
     loop {
+        nrf::sd_app_evt_wait();
         let x = nrf::nrf_log_frontend_dequeue();
         if !x {
-            break
+            break;
         }
     }
 }

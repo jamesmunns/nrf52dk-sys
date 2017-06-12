@@ -3,12 +3,9 @@ rustflags = [
     "-C", "link-arg=-mthumb",
     "-C", "link-arg=-Tmemory.x",
     "-C", "link-arg=-mcpu=cortex-m4",
-
-#    "-C", "link-arg=--specs=nano.specs",
-#    "-C", "link-arg=-lnosys",
+    "-C", "link-arg=--specs=nano.specs",
 
     "-C", "link-arg=-Wl,--gc-sections",
-    "-C", "link-arg=-Os",
     "-C", "link-arg=-Wl,--start-group",
     "-C", "link-arg=-Wl,--end-group",
     "-C", "link-arg=-Wl,--build-id=none",
