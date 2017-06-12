@@ -1,9 +1,11 @@
 [package]
-name = "smooth_blue"
+name = "nrf52dk-sys"
 version = "0.1.0"
 authors = ["James Munns <james.munns@gmail.com>"]
-publish = false
 build = "build.rs"
+license = "MIT"
+repository = "https://github.com/jamesmunns/nrf52dk-sys"
+description = "nrf52 support using the nRF5-SDK and SoftDevice S132"
 
 [dependencies]
 cortex-m = "0.1.6"

@@ -4,8 +4,8 @@
 #![feature(asm)]
 
 #[macro_use]
-extern crate smooth_blue;
-use smooth_blue as nrf;
+extern crate nrf52dk_sys;
+use nrf52dk_sys as nrf;
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {

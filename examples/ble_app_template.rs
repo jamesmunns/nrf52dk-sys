@@ -3,8 +3,8 @@
 
 #![feature(asm)]
 
-extern crate smooth_blue;
-use smooth_blue as nrf;
+extern crate nrf52dk_sys;
+use nrf52dk_sys as nrf;
 use nrf::check;
 
 static NAME: &str = "RUST-BLE";
