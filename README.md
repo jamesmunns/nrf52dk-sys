@@ -6,22 +6,22 @@ This crate uses the Nordic SoftDevice S132 (a binary Bluetooth stack), as well a
 
 This project aims to be a reference on how to combine C and Rust components, in order to create a Bluetooth peripheral which uses Rust for the main application software.
 
-This project is not yet ready for public consumption.
-
 ## Software Prerequisites
 
 This project requires the following tools before building:
 
-Tool                | Recommended Version   | Minimum Version   | Link/Install
-:---                | :------------------   | :--------------   | :---
-Clang               | 3.9                   | ?                 | [debian/ubuntu](http://apt.llvm.org/) or [source](http://releases.llvm.org/download.html)
-arm-none-eabi-gcc   | 6.1                   | ?                 | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
-Rust (nightly)      | 1.19.0                | ?                 | [rustup.rs](https://www.rustup.rs/)
-Rust source         | 1.19.0                | ?                 | `rustup component add rust-src`
-Xargo               | 0.3.8                 | ?                 | `cargo install xargo`
-Bindgen             | 0.25.3                | ?                 | `cargo install bindgen`
+Tool                | Recommended Version   | Link/Install
+:---                | :------------------   | :---
+Clang               | 3.9                   | [debian/ubuntu](http://apt.llvm.org/) or [source](http://releases.llvm.org/download.html)
+arm-none-eabi-gcc   | 6.1                   | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
+Rust (nightly)      | nightly-2017-06-12    | [rustup.rs](https://www.rustup.rs/)
+Rust source         | nightly-2017-06-12    | `rustup component add rust-src`
+Xargo               | 0.3.8                 | `cargo install xargo`
+Bindgen             | 0.25.3                | `cargo install bindgen`
 
-See the [Dockerfile](./Dockerfile) for more specific setup instructions for ubuntu/debian based systems.
+If you would like more detailed installation instructions, please look at [The Detailed Setup Instructions](./SETUP.md).
+
+If you use `docker`, please see the debian based [Dockerfile](./Dockerfile).
 
 Additionally, the following tools are required to run or debug the firmware:
 
@@ -35,7 +35,7 @@ JLink       | v6.16                 | [JLink Download](https://www.segger.com/do
 ```text
 git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
 cd nrf52dk-sys
-xargo build --target thumbv7em-none-eabihf
+xargo build --example blinky
       Compiling core v0.0.0 (file:///root/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore)
        Finished release [optimized] target(s) in 14.8 secs
        Updating registry `https://github.com/rust-lang/crates.io-index`
@@ -88,7 +88,7 @@ This only flashes the firmware built above. If you would like to flash and debug
 
 ```text
 cd nrf52dk-sys
-arm-none-eabi-objcopy -O ihex target/thumbv7em-none-eabihf/debug/bin target.hex
+arm-none-eabi-objcopy -O ihex target/thumbv7em-none-eabihf/debug/examples/blinky target.hex
 JLinkExe -device NRF52832_XXAA -if SWD -speed 4000 -autoconnect 1
 J-Link>loadfile target.hex
     Downloading file [target.hex]...
@@ -115,7 +115,7 @@ Then, in another terminal:
 
 ```text
 cd nrf52dk-sys
-arm-none-eabi-gdb -tui target/thumbv7em-none-eabihf/debug/bin
+arm-none-eabi-gdb -tui target/thumbv7em-none-eabihf/debug/examples/blinky
 (gdb) target remote :2331
 # ...
 (gdb) monitor reset

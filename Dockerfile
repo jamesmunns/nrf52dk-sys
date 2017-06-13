@@ -21,24 +21,23 @@ RUN add-apt-repository "deb http://apt.llvm.org/jessie/ llvm-toolchain-jessie-3.
     apt-get update && \
     apt-get install -y llvm-3.9-dev libclang-3.9-dev clang-3.9
 
-# "Install" GCC6.1 arm-none-eabi
+# Install GCC6.1 arm-none-eabi
 RUN wget https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/6_1-2017q1/gcc-arm-none-eabi-6-2017-q1-update-linux.tar.bz2 \
   -O /gcc.tar.bz2
 
 RUN tar xf /gcc.tar.bz2
 ENV PATH="/gcc-arm-none-eabi-6-2017-q1-update/bin:${PATH}"
 
-# Install rust - todo, pin rust nightly version. Nightly required for embedded dev
-#   last tested w/ "rustc 1.19.0-nightly (107bd67ef 2017-06-02)"
+# Install rust
 RUN curl https://sh.rustup.rs -sSf > install_rust.sh
-RUN /bin/bash /install_rust.sh -y --default-toolchain nightly
+RUN /bin/bash /install_rust.sh -y --default-toolchain nightly-2017-06-12
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Use Xargo for cross platform building - last tested w/ 0.3.8
-RUN cargo install xargo
+# Use Xargo for cross platform building
+RUN cargo install xargo --vers 0.3.8
 
-# Use Bindgen as a binary to generate headers - last tested w/ 0.25.3
-RUN cargo install bindgen
+# Use Bindgen as a binary to generate headers
+RUN cargo install bindgen --vers 0.25.3
 
 # Add the rust-src component so we can build `core`
 RUN rustup component add rust-src
@@ -49,4 +48,4 @@ RUN git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
 # Move to the git repo
 WORKDIR /nrf52dk-sys
 
-CMD ["xargo", "build", "--target", "thumbv7em-none-eabihf"]
+CMD ["xargo", "build", "--example", "ble_app_template"]
