@@ -85,7 +85,7 @@ cargo install bindgen --vers 0.25.3
 It is necessary to rebuild the `core` component of Rust for our target. Don't worry, `xargo` takes care of this, we just need to provide it Rust's source code.
 
 ```bash
-rustup component add rustup component add rust-src
+rustup component add rust-src
 ```
 
 ## 7. Download the `nrf52dk-sys` repo, and build an example
