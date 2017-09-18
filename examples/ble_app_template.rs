@@ -135,7 +135,7 @@ unsafe fn ble_stack_init() {
 
     // Configure the maximum number of connections.
     let mut ble_cfg = nrf::ble_cfg_t::default();
-    *ble_cfg.gap_cfg.as_mut().role_count_cfg.as_mut() = nrf::ble_gap_cfg_role_count_t {
+    ble_cfg.gap_cfg.role_count_cfg = nrf::ble_gap_cfg_role_count_t {
         periph_role_count: nrf::BLE_GAP_ROLE_COUNT_PERIPH_DEFAULT as u8,
         central_role_count: 0,
         central_sec_count: 0,
@@ -432,22 +432,22 @@ unsafe extern "C" fn pm_evt_handler(p_evt: *const nrf::pm_evt_t) {
         PM_EVT_PEER_DATA_UPDATE_FAILED => {
             // Assert.
             // AJM - union read example here!
-            check((*p_evt).params.peer_data_update_failed.as_ref().error).unwrap();
+            check((*p_evt).params.peer_data_update_failed.error).unwrap();
         }
 
         PM_EVT_PEER_DELETE_FAILED => {
             // Assert.
-            check((*p_evt).params.peer_delete_failed.as_ref().error).unwrap();
+            check((*p_evt).params.peer_delete_failed.error).unwrap();
         }
 
         PM_EVT_PEERS_DELETE_FAILED => {
             // Assert.
-            check((*p_evt).params.peers_delete_failed_evt.as_ref().error).unwrap();
+            check((*p_evt).params.peers_delete_failed_evt.error).unwrap();
         }
 
         PM_EVT_ERROR_UNEXPECTED => {
             // Assert.
-            check((*p_evt).params.error_unexpected.as_ref().error).unwrap();
+            check((*p_evt).params.error_unexpected.error).unwrap();
         }
 
         _ => {}
@@ -471,37 +471,35 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
     } else if x == BLE_GAP_EVT_CONNECTED as u16 {
         nrf_log_info("Connected.\r\n\0");
         check(nrf::bsp_indication_set(nrf::bsp_indication_t::BSP_INDICATE_CONNECTED)).unwrap();
-        M_CONN_HANDLE = (*p_ble_evt).evt.gap_evt.as_ref().conn_handle;
+        M_CONN_HANDLE = (*p_ble_evt).evt.gap_evt.conn_handle;
     } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.conn_handle,
                                          nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
                 .unwrap();
     } else if x == BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.conn_handle,
                                          nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
                 .unwrap();
     } else if x == BLE_GATTS_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Server Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gatts_evt.as_ref().conn_handle,
+        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gatts_evt.conn_handle,
                                          nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
                 .unwrap();
     } else if x == BLE_EVT_USER_MEM_REQUEST as u16 {
-        check(nrf::sd_ble_user_mem_reply((*p_ble_evt).evt.gattc_evt.as_ref().conn_handle,
+        check(nrf::sd_ble_user_mem_reply((*p_ble_evt).evt.gattc_evt.conn_handle,
                                          core::ptr::null()))
                 .unwrap();
     } else if x == BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST as u16 {
         let req = (*p_ble_evt)
             .evt
             .gatts_evt
-            .as_ref()
             .params
-            .authorize_request
-            .as_ref();
+            .authorize_request;
 
         if req.type_ != nrf::BLE_GATTS_AUTHORIZE_TYPE_INVALID as u8 {
-            let op = req.request.write.as_ref().op;
+            let op = req.request.write.op;
             if (op == nrf::BLE_GATTS_OP_PREP_WRITE_REQ as u8) ||
                (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_NOW as u8) ||
                (op == nrf::BLE_GATTS_OP_EXEC_WRITE_REQ_CANCEL as u8) {
@@ -513,12 +511,11 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
                     nrf::BLE_GATTS_AUTHORIZE_TYPE_READ as u8
                 };
 
-                auth_reply.params.write.as_mut().gatt_status = APP_FEATURE_NOT_SUPPORTED;
+                auth_reply.params.write.gatt_status = APP_FEATURE_NOT_SUPPORTED;
 
                 check(nrf::sd_ble_gatts_rw_authorize_reply((*p_ble_evt)
                                                                .evt
                                                                .gatts_evt
-                                                               .as_ref()
                                                                .conn_handle,
                                                            &auth_reply))
                         .unwrap();

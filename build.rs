@@ -91,7 +91,6 @@ fn generate_ble(outdir: &String) {
     cmd.arg("--no-doc-comments");
     cmd.arg("--use-core");
     cmd.arg("--ctypes-prefix=ctypes");
-    cmd.arg("--no-unstable-rust");
     cmd.arg("--with-derive-default");
 
     cmd.arg("--output");

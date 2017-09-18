@@ -17,7 +17,7 @@ arm-none-eabi-gcc   | 6.1                   | [Current Version](https://develope
 Rust (nightly)      | nightly-2017-06-12    | [rustup.rs](https://www.rustup.rs/)
 Rust source         | nightly-2017-06-12    | `rustup component add rust-src`
 Xargo               | 0.3.8                 | `cargo install xargo`
-Bindgen             | 0.25.3                | `cargo install bindgen`
+Bindgen             | 0.30.0                | `cargo install bindgen`
 
 If you would like more detailed installation instructions, please look at [The Detailed Setup Instructions](./SETUP.md).
 

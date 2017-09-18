@@ -37,7 +37,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install xargo --vers 0.3.8
 
 # Use Bindgen as a binary to generate headers
-RUN cargo install bindgen --vers 0.25.3
+RUN cargo install bindgen --vers 0.30.0
 
 # Add the rust-src component so we can build `core`
 RUN rustup component add rust-src
