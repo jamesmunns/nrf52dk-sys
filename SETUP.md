@@ -77,7 +77,7 @@ Xargo makes compiling embedded crates easier. Bindgen automatically generates Ru
 
 ```bash
 cargo install xargo --vers 0.3.8
-cargo install bindgen --vers 0.25.3
+cargo install bindgen --vers 0.30.0
 ```
 
 ## 6. Install Rust Core Source
