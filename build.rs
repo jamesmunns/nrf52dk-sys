@@ -11,7 +11,7 @@ use std::io::Write;
 use gcc::Build;
 
 fn main() {
-    let outdir = env::var("OUT_DIR").unwrap();
+    let outdir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     // If any of these files/folders change, we should regenerate
     //   the whole C + bindings component
@@ -75,9 +75,7 @@ impl SdkInfo {
     }
 }
 
-fn process_linker_file(outdir: &String) {
-    let out = &PathBuf::from(outdir);
-
+fn process_linker_file(out: &PathBuf) {
     // Copy over the target specific linker script
     File::create(out.join("nrf52dk-sys.ld"))
         .unwrap()
@@ -93,9 +91,8 @@ fn process_linker_file(outdir: &String) {
     println!("cargo:rustc-link-search={}", out.display());
 }
 
-fn make_c_deps(outdir: &String, info: &SdkInfo) {
+fn make_c_deps(out_path: &PathBuf, info: &SdkInfo) {
     let mut config = Build::new();
-    let out_path = PathBuf::from(outdir);
 
     config.out_dir(out_path);
 
@@ -118,7 +115,7 @@ fn make_c_deps(outdir: &String, info: &SdkInfo) {
 
     config.compile("libnrf.a");
 
-    println!("cargo:rustc-link-search={}", outdir);
+    println!("cargo:rustc-link-search={}", out_path.display());
     println!("cargo:rustc-link-lib=static=nrf");
 }
 
@@ -143,12 +140,7 @@ fn find_system_includes() -> Vec<PathBuf> {
     res
 }
 
-fn generate_ble(outdir: &String, info: &SdkInfo) {
-    let out = &PathBuf::from(outdir);
-    let out2 = out.join("bindings.rs");
-    let out3 = out2.to_string_lossy();
-
-
+fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     // TODO version assert
 
     let mut cmd = Command::new("bindgen");
@@ -162,7 +154,7 @@ fn generate_ble(outdir: &String, info: &SdkInfo) {
     cmd.arg("--verbose");
 
     cmd.arg("--output");
-    cmd.arg(out3.as_ref());
+    cmd.arg(out.join("bindings.rs"));
 
     // Clang Opts begin here
     cmd.arg("--");
