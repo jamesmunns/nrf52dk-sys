@@ -122,6 +122,27 @@ fn make_c_deps(outdir: &String, info: &SdkInfo) {
     println!("cargo:rustc-link-lib=static=nrf");
 }
 
+/// Extract the default include path from the target compiler
+fn find_system_includes() -> Vec<PathBuf> {
+    let output = Command::new("arm-none-eabi-gcc")
+        .arg("-E")
+        .arg("-Wp,-v")
+        .arg("-xc")
+        .arg("/dev/null")
+        .arg("-o/dev/null")
+        .output()
+        .expect("failed to invoke arg-none-eabi-gcc; it needs to be in your PATH");
+
+    let mut res = Vec::new();
+    for line in String::from_utf8_lossy(&output.stderr).split("\n") {
+        if line.starts_with(" ") {
+            res.push(PathBuf::from(line.trim()));
+        }
+    }
+
+    res
+}
+
 fn generate_ble(outdir: &String, info: &SdkInfo) {
     let out = &PathBuf::from(outdir);
     let out2 = out.join("bindings.rs");
@@ -146,24 +167,15 @@ fn generate_ble(outdir: &String, info: &SdkInfo) {
     // Clang Opts begin here
     cmd.arg("--");
 
-    if let Some(home_dir) = env::home_dir() {
-        // Use the macos arduino toolchain if we can find it
-        let toolchain =
-            home_dir.join("Library/Arduino15/packages/adafruit/tools/gcc-arm-none-eabi/5_2-2015q4");
-        if toolchain.exists() {
-            // Don't pollute the headers with the host header files.  This matters
-            // most on macOS where the headers have a lot of darwin specific things
-            cmd.arg("-nostdlib");
-            cmd.arg("-nostdinc");
-            cmd.arg("-ffreestanding");
+    // Don't pollute the headers with the host header files.  This matters
+    // most on macOS where the headers have a lot of darwin specific things
+    cmd.arg("-nostdlib");
+    cmd.arg("-nostdinc");
+    cmd.arg("-ffreestanding");
 
-            // locate the system includes from the toolchain
-            cmd.arg(format!(
-                "-I{}/lib/gcc/arm-none-eabi/5.2.1/include",
-                toolchain.display()
-            ));
-            cmd.arg(format!("-I{}/arm-none-eabi/include", toolchain.display()));
-        }
+    // Probe the target compiler for its default includes
+    for inc in find_system_includes() {
+        cmd.arg(format!("-I{}", inc.display()));
     }
 
     // Standard defines (common with GCC build)
