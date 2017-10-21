@@ -8,7 +8,6 @@ use nrf52dk_sys as nrf;
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
-
     nrf::bsp_board_leds_init();
 
     loop {

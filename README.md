@@ -16,8 +16,8 @@ Clang               | 3.9                   | [debian/ubuntu](http://apt.llvm.or
 arm-none-eabi-gcc   | 6.1                   | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
 Rust (nightly)      | nightly-2017-11-15    | [rustup.rs](https://www.rustup.rs/)
 Rust source         | nightly-2017-11-15    | `rustup component add rust-src`
-Xargo               | 0.3.8                 | `cargo install xargo`
-Bindgen             | 0.30.0                | `cargo install bindgen`
+Xargo               | 0.3.8                 | `cargo install xargo --vers 0.3.8`
+Bindgen             | 0.31.3                | `cargo install bindgen --vers 0.31.3`
 
 If you would like more detailed installation instructions, please look at [The Detailed Setup Instructions](./SETUP.md).
 

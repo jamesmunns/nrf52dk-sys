@@ -12,13 +12,13 @@
 #![feature(naked_functions)]
 #![no_std]
 
+#[macro_reexport(bkpt)]
+#[macro_use]
+extern crate cortex_m;
 #[cfg(feature = "semihosting")]
 #[macro_reexport(hprint, hprintln)]
 #[macro_use]
 extern crate cortex_m_semihosting;
-#[macro_reexport(bkpt)]
-#[macro_use]
-extern crate cortex_m;
 extern crate r0;
 
 #[macro_use]
@@ -39,10 +39,8 @@ pub mod ctypes {
     pub type c_ulonglong = u64;
     #[repr(u8)]
     pub enum c_void {
-        #[doc(hidden)]
-        __variant1,
-        #[doc(hidden)]
-        __variant2,
+        #[doc(hidden)] __variant1,
+        #[doc(hidden)] __variant2,
     }
 
     // Non-Windows
@@ -59,6 +57,18 @@ pub fn check(ec: u32) -> Result<(), ()> {
         _ => Err(()),
     }
 }
+
+// We cannot use code gen here because bindgen created __va_list twice. Could
+// we be double-defining things in C?
+#[repr(C)]
+#[derive(Debug)]
+pub struct __va_list {
+    pub __ap: *mut ctypes::c_void,
+}
+
+// Our own type alias to i8. We cannot use the generated code here, because
+// bindgen yields a u8, and we have require constants.
+pub type IRQn_Type = i8;
 
 pub const IRQn_Type_Reset_IRQn: IRQn_Type = -15;
 pub const IRQn_Type_NonMaskableInt_IRQn: IRQn_Type = -14;
@@ -107,7 +117,5 @@ pub const IRQn_Type_SPIM2_SPIS2_SPI2_IRQn: IRQn_Type = 35;
 pub const IRQn_Type_RTC2_IRQn: IRQn_Type = 36;
 pub const IRQn_Type_I2S_IRQn: IRQn_Type = 37;
 pub const IRQn_Type_FPU_IRQn: IRQn_Type = 38;
-// Our own type alias to i8
-pub type IRQn_Type = i8;
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
