@@ -8,7 +8,7 @@ use std::process::Command;
 use std::fs::File;
 use std::io::Write;
 
-use gcc::Config;
+use gcc::Build;
 
 fn main() {
 
@@ -48,7 +48,7 @@ fn process_linker_file(outdir: &String) {
 }
 
 fn make_c_deps(outdir: &String) {
-    let mut config = Config::new();
+    let mut config = Build::new();
     let out_path = PathBuf::from(outdir);
 
     config.out_dir(out_path);
@@ -92,12 +92,29 @@ fn generate_ble(outdir: &String) {
     cmd.arg("--use-core");
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--with-derive-default");
+    cmd.arg("--verbose");
 
     cmd.arg("--output");
     cmd.arg(out3.as_ref());
 
     // Clang Opts begin here
     cmd.arg("--");
+
+    if let Some(home_dir) = env::home_dir() {
+        // Use the macos arduino toolchain if we can find it
+        let toolchain = home_dir.join("Library/Arduino15/packages/adafruit/tools/gcc-arm-none-eabi/5_2-2015q4");
+        if toolchain.exists() {
+            // Don't pollute the headers with the host header files.  This matters
+            // most on macOS where the headers have a lot of darwin specific things
+            cmd.arg("-nostdlib");
+            cmd.arg("-nostdinc");
+            cmd.arg("-ffreestanding");
+
+            // locate the system includes from the toolchain
+            cmd.arg(format!("-I{}/lib/gcc/arm-none-eabi/5.2.1/include", toolchain.display()));
+            cmd.arg(format!("-I{}/arm-none-eabi/include", toolchain.display()));
+        }
+    }
 
     // Standard defines (common with GCC build)
     for &(var, oval) in DEFINES {
@@ -294,6 +311,11 @@ static FLAGS: &[&str] = &["-std=c99",
                           "-fdata-sections",
                           "-fno-strict-aliasing",
                           "-fno-builtin",
+                          // the headers are riddled with unused parameters and emit
+                          // hundreds of warnings: suppress them.
+                          "-Wno-unused-parameter",
+                          "-Wno-sign-compare",
+                          "-Wno-missing-field-initializers",
                           "--short-enums"];
 
 static DEFINES: &[(&str, Option<&str>)] = &[("BLE_STACK_SUPPORT_REQD", None),
