@@ -1,10 +1,11 @@
 /// Default panic handler
 #[linkage = "weak"]
 #[lang = "panic_fmt"]
-unsafe extern "C" fn panic_fmt(_args: ::core::fmt::Arguments,
-                               _file: &'static str,
-                               _line: u32)
-                               -> ! {
+unsafe extern "C" fn panic_fmt(
+    _args: ::core::fmt::Arguments,
+    _file: &'static str,
+    _line: u32,
+) -> ! {
     hprint!("panicked at '");
     match () {
         #[cfg(feature = "semihosting")]

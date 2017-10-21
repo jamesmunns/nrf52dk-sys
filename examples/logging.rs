@@ -9,7 +9,6 @@ use nrf52dk_sys as nrf;
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
-
     nrf::bsp_board_leds_init();
     nrf::check(nrf::nrf_log_init(None)).unwrap();
     nrf::check(nrf::app_timer_init()).unwrap();
@@ -49,6 +48,6 @@ unsafe fn log_str(foo: &'static str) {
 //     NRF_LOG_INTERNAL_INFO( __VA_ARGS__)
 //         LOG_INTERNAL(NRF_LOG_LEVEL_INFO, LOG_INFO_PREFIX, __VA_ARGS__);
 //             LOG_INTERNAL_X(NUM_VA_ARGS_LESS_1( \
-//                                                            __VA_ARGS__), type, prefix, __VA_ARGS__)
+//                            __VA_ARGS__), type, prefix, __VA_ARGS__)
 //                 CONCAT_2(LOG_INTERNAL_, N) (__VA_ARGS__)
 //                     nrf_log_frontend_std_0(type, prefix str)
