@@ -1,5 +1,6 @@
 extern crate gcc;
 
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::path::PathBuf;
 
@@ -12,6 +13,20 @@ use gcc::Build;
 
 fn main() {
     let outdir = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+    // We're going to generate app_config.h from their feature
+    // selection, so let's extract that from the env.
+    let features: HashSet<_> = env::vars()
+        .filter_map(|(k, _)| {
+            if k.starts_with("CARGO_FEATURE_") && k != "CARGO_FEATURE_DEFAULT" {
+                Some(k[14..].to_owned())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    write_app_config(&outdir, &features);
 
     // If any of these files/folders change, we should regenerate
     //   the whole C + bindings component
@@ -31,7 +46,16 @@ fn main() {
 
     process_linker_file(&outdir);
     generate_ble(&outdir, &info);
-    make_c_deps(&outdir, &info);
+    make_c_deps(&outdir, &info, &features);
+}
+
+/// Emit app_config.h based on the enabled features.  This is used
+/// to override things in sdk_config.h
+fn write_app_config(outdir: &PathBuf, features: &HashSet<String>) {
+    let mut app_config = File::create(outdir.join("app_config.h")).unwrap();
+    for feature in features.iter() {
+        writeln!(app_config, "#define {}_ENABLED 1", feature).ok();
+    }
 }
 
 #[derive(Default)]
@@ -91,7 +115,35 @@ fn process_linker_file(out: &PathBuf) {
     println!("cargo:rustc-link-search={}", out.display());
 }
 
-fn make_c_deps(out_path: &PathBuf, info: &SdkInfo) {
+/// Build SRC_TO_FEAT into something using PathBufs
+fn compile_src_to_feat() -> HashMap<PathBuf, String> {
+    let mut map = HashMap::new();
+    for &(file, feat) in SRC_TO_FEAT.iter() {
+        map.insert(PathBuf::from(file), feat.to_owned());
+    }
+    map
+}
+
+/// Test whether `src` has any prefixes in the SRC_TO_FEAT map,
+/// and if it does whether the RHS is a disabled feature.
+/// Returns true if the src is considered to be enabled,
+/// false otherwise.
+fn is_src_enabled(
+    src: &PathBuf,
+    feat_map: &HashMap<PathBuf, String>,
+    features: &HashSet<String>,
+) -> bool {
+    for (prefix, feat) in feat_map.iter() {
+        if src.starts_with(prefix) {
+            if !features.contains(feat) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
     let mut config = Build::new();
 
     config.out_dir(out_path);
@@ -104,11 +156,16 @@ fn make_c_deps(out_path: &PathBuf, info: &SdkInfo) {
         config.define(var, val);
     }
 
+    let feat_map = compile_src_to_feat();
     for f in info.srcs.iter() {
-        config.file(f);
+        if is_src_enabled(f, &feat_map, features) {
+            config.file(f);
+        }
     }
 
-    // Then the rest
+    // out_path is where we find the app_config.h that we generate
+    // from the enabled features
+    config.include(out_path);
     for i in info.dirs.iter() {
         config.include(i);
     }
@@ -166,6 +223,7 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("-ffreestanding");
 
     // Probe the target compiler for its default includes
+    cmd.arg(format!("-I{}", out.display()));
     for inc in find_system_includes() {
         cmd.arg(format!("-I{}", inc.display()));
     }
@@ -215,6 +273,7 @@ static FLAGS: &[&str] = &[
 ];
 
 static DEFINES: &[(&str, Option<&str>)] = &[
+    ("USE_APP_CONFIG", None),
     ("BLE_STACK_SUPPORT_REQD", None),
     ("BOARD_PCA10040", None),
     ("CONFIG_GPIO_AS_PINRESET", None),
@@ -235,4 +294,16 @@ static DEFINES: &[(&str, Option<&str>)] = &[
     ("S132", None),
     ("SOFTDEVICE_PRESENT", None),
     ("SWI_DISABLE0", None),
+];
+
+/// The feature names on the RHS need to be enabled in order for the
+/// sources on the LFS to get compiled in.
+static SRC_TO_FEAT: &[(&str, &str)] = &[
+    ("nRF5-sdk/components/ble/ble_advertising", "BLE_ADVERTISING"),
+    ("nRF5-sdk/components/ble/peer_manager", "PEER_MANAGER"),
+    ("nRF5-sdk/components/libraries/log", "NRF_LOG"),
+    ("nRF5-sdk/components/libraries/crc16", "CRC16"),
+    ("nRF5-sdk/components/libraries/button", "BUTTON"),
+    ("nRF5-sdk/components/drivers_nrf/uart", "UART"),
+    ("nRF5-sdk/components/drivers_nrf/gpiote", "GPIOTE"),
 ];
