@@ -1,3 +1,4 @@
+Cargo.lock
 target
 *.o
 *.d
@@ -6,3 +7,4 @@ target
 *.a
 *.bk
 *.gdbinit
+*.swp

@@ -10,7 +10,6 @@ use nrf::check;
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
-
     nrf::bsp_board_leds_init();
 
     loop {

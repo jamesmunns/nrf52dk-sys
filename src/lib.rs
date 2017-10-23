@@ -12,13 +12,13 @@
 #![feature(naked_functions)]
 #![no_std]
 
+#[macro_reexport(bkpt)]
+#[macro_use]
+extern crate cortex_m;
 #[cfg(feature = "semihosting")]
 #[macro_reexport(hprint, hprintln)]
 #[macro_use]
 extern crate cortex_m_semihosting;
-#[macro_reexport(bkpt)]
-#[macro_use]
-extern crate cortex_m;
 extern crate r0;
 
 #[macro_use]
@@ -39,10 +39,8 @@ pub mod ctypes {
     pub type c_ulonglong = u64;
     #[repr(u8)]
     pub enum c_void {
-        #[doc(hidden)]
-        __variant1,
-        #[doc(hidden)]
-        __variant2,
+        #[doc(hidden)] __variant1,
+        #[doc(hidden)] __variant2,
     }
 
     // Non-Windows
