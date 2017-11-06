@@ -1,15 +1,13 @@
 extern crate gcc;
 
 use std::collections::{HashMap, HashSet};
+use gcc::Build;
+
 use std::env;
 use std::path::PathBuf;
-
 use std::process::Command;
-
 use std::fs::File;
 use std::io::Write;
-
-use gcc::Build;
 
 fn main() {
     let outdir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -115,36 +113,9 @@ fn process_linker_file(out: &PathBuf) {
     println!("cargo:rustc-link-search={}", out.display());
 }
 
-/// Build SRC_TO_FEAT into something using PathBufs
-fn compile_src_to_feat() -> HashMap<PathBuf, String> {
-    let mut map = HashMap::new();
-    for &(file, feat) in SRC_TO_FEAT.iter() {
-        map.insert(PathBuf::from(file), feat.to_owned());
-    }
-    map
-}
-
-/// Test whether `src` has any prefixes in the SRC_TO_FEAT map,
-/// and if it does whether the RHS is a disabled feature.
-/// Returns true if the src is considered to be enabled,
-/// false otherwise.
-fn is_src_enabled(
-    src: &PathBuf,
-    feat_map: &HashMap<PathBuf, String>,
-    features: &HashSet<String>,
-) -> bool {
-    for (prefix, feat) in feat_map.iter() {
-        if src.starts_with(prefix) {
-            if !features.contains(feat) {
-                return false;
-            }
-        }
-    }
-    true
-}
-
-fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
+fn make_c_deps(outdir: &String) {
     let mut config = Build::new();
+    let out_path = PathBuf::from(outdir);
 
     config.out_dir(out_path);
 
@@ -209,7 +180,8 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--with-derive-default");
     cmd.arg("--verbose");
-
+    cmd.arg("--blacklist-type"); 
+    cmd.arg("IRQn_Type");
     cmd.arg("--output");
     cmd.arg(out.join("bindings.rs"));
 
@@ -250,7 +222,9 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("-target");
     cmd.arg(env::var("TARGET").unwrap());
 
-    assert!(cmd.status().expect("failed to build Blue libs").success());
+    assert!(cmd.status()
+                .expect("failed to build BLE libs")
+                .success());
 }
 
 static FLAGS: &[&str] = &[

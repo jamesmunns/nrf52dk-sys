@@ -3,10 +3,8 @@
 #![no_main]
 #![feature(asm)]
 
-#[macro_use]
 extern crate nrf52dk_sys;
 use nrf52dk_sys as nrf;
-use nrf::check;
 
 #[no_mangle]
 pub unsafe extern "C" fn main() {
