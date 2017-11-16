@@ -14,8 +14,8 @@ Tool                | Recommended Version   | Link/Install
 :---                | :------------------   | :---
 Clang               | 3.9                   | [debian/ubuntu](http://apt.llvm.org/) or [source](http://releases.llvm.org/download.html)
 arm-none-eabi-gcc   | 6.1                   | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
-Rust (nightly)      | nightly-2017-06-12    | [rustup.rs](https://www.rustup.rs/)
-Rust source         | nightly-2017-06-12    | `rustup component add rust-src`
+Rust (nightly)      | nightly-2017-11-15    | [rustup.rs](https://www.rustup.rs/)
+Rust source         | nightly-2017-11-15    | `rustup component add rust-src`
 Xargo               | 0.3.8                 | `cargo install xargo`
 Bindgen             | 0.30.0                | `cargo install bindgen`
 
