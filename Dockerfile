@@ -30,14 +30,14 @@ ENV PATH="/gcc-arm-none-eabi-6-2017-q1-update/bin:${PATH}"
 
 # Install rust
 RUN curl https://sh.rustup.rs -sSf > install_rust.sh
-RUN /bin/bash /install_rust.sh -y --default-toolchain nightly-2017-06-12
+RUN /bin/bash /install_rust.sh -y --default-toolchain nightly-2017-11-15
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Use Xargo for cross platform building
 RUN cargo install xargo --vers 0.3.8
 
 # Use Bindgen as a binary to generate headers
-RUN cargo install bindgen --vers 0.30.0
+RUN cargo install bindgen --vers 0.31.3
 
 # Add the rust-src component so we can build `core`
 RUN rustup component add rust-src
@@ -48,4 +48,4 @@ RUN git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
 # Move to the git repo
 WORKDIR /nrf52dk-sys
 
-CMD ["xargo", "build", "--example", "ble_app_template"]
+CMD ["xargo", "build", "--example", "ble_app_template", "--quiet"]
