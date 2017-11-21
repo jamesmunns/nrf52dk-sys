@@ -1,14 +1,12 @@
 extern crate gcc;
 
+use gcc::Build;
+
 use std::env;
 use std::path::PathBuf;
-
 use std::process::Command;
-
 use std::fs::File;
 use std::io::Write;
-
-use gcc::Config;
 
 fn main() {
 
@@ -48,7 +46,7 @@ fn process_linker_file(outdir: &String) {
 }
 
 fn make_c_deps(outdir: &String) {
-    let mut config = Config::new();
+    let mut config = Build::new();
     let out_path = PathBuf::from(outdir);
 
     config.out_dir(out_path);
@@ -92,7 +90,8 @@ fn generate_ble(outdir: &String) {
     cmd.arg("--use-core");
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--with-derive-default");
-
+    cmd.arg("--blacklist-type"); 
+    cmd.arg("IRQn_Type");
     cmd.arg("--output");
     cmd.arg(out3.as_ref());
 
@@ -122,7 +121,7 @@ fn generate_ble(outdir: &String) {
     cmd.arg(env::var("TARGET").unwrap());
 
     assert!(cmd.status()
-                .expect("failed to build Blue libs")
+                .expect("failed to build BLE libs")
                 .success());
 }
 

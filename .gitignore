@@ -6,3 +6,7 @@ target
 *.a
 *.bk
 *.gdbinit
+.vscode
+
+# Libraries should not check in Cargo.lock
+Cargo.lock
