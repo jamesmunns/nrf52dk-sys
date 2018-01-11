@@ -43,7 +43,7 @@ RUN cargo install bindgen --vers 0.31.3
 RUN rustup component add rust-src
 
 # Pull down the latest code/submodules
-RUN git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
+RUN git clone --recursive https://github.com/jamesmunns/nrf52dk-sys --branch wez_pr
 
 # Move to the git repo
 WORKDIR /nrf52dk-sys

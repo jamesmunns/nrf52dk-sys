@@ -1,3 +1,4 @@
+Cargo.lock
 target
 *.o
 *.d
@@ -7,6 +8,7 @@ target
 *.bk
 *.gdbinit
 .vscode
+*.swp
 
 # Libraries should not check in Cargo.lock
 Cargo.lock
