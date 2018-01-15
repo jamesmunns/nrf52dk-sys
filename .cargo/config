@@ -1,3 +1,4 @@
+
 [target.thumbv7em-none-eabihf]
 rustflags = [
     "-C", "link-arg=-mthumb",
@@ -17,3 +18,4 @@ rustflags = [
 
 [build]
 target = "thumbv7em-none-eabihf"
+incremental = false

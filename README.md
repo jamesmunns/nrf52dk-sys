@@ -50,6 +50,10 @@ xargo build --example blinky
        Finished dev [unoptimized + debuginfo] target(s) in 15.66 secs
 ```
 
+**NOTE:** This crate does not work with incremental compilation. In our
+**.cargo/config**, we set `incremental = false`, which corresponds to setting
+`CARGO_INCREMENTAL=0` in your environment.
+
 ## Flashing, Debugging, and Running
 
 ### Flashing the SoftDevice
