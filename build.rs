@@ -1,13 +1,13 @@
 extern crate gcc;
 
-use std::collections::{HashMap, HashSet};
 use gcc::Build;
+use std::collections::{HashMap, HashSet};
 
 use std::env;
-use std::path::PathBuf;
-use std::process::Command;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
     let outdir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -113,7 +113,6 @@ fn process_linker_file(out: &PathBuf) {
     println!("cargo:rustc-link-search={}", out.display());
 }
 
-
 fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
     let mut config = Build::new();
 
@@ -180,9 +179,9 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--with-derive-default");
     cmd.arg("--verbose");
-    cmd.arg("--blacklist-type"); 
+    cmd.arg("--blacklist-type");
     cmd.arg("IRQn_Type");
-    cmd.arg("--blacklist-type"); 
+    cmd.arg("--blacklist-type");
     cmd.arg("__va_list");
     // This type wraps a mutable void pointer, and we cannot safely impl Copy.
     cmd.arg("--output");
@@ -225,9 +224,7 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("-target");
     cmd.arg(env::var("TARGET").unwrap());
 
-    assert!(cmd.status()
-                .expect("failed to build BLE libs")
-                .success());
+    assert!(cmd.status().expect("failed to build BLE libs").success());
 }
 
 /// Build SRC_TO_FEAT into something using PathBufs

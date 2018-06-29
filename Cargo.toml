@@ -8,8 +8,10 @@ repository = "https://github.com/jamesmunns/nrf52dk-sys"
 description = "nrf52 support using the nRF5-SDK and SoftDevice S132"
 
 [dependencies]
-cortex-m = "0.1.6"
-r0 = "0.2.0"
+cortex-m = "0.5.2"
+cortex-m-rt = "0.5.0"
+cortex-m-semihosting = "0.3.0"
+panic-semihosting = "0.3.0"
 
 [build-dependencies]
 gcc = "0.3.46"

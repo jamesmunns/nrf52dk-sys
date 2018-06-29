@@ -8,23 +8,8 @@
 #![feature(asm)]
 #![feature(lang_items)]
 #![feature(linkage)]
-#![feature(macro_reexport)]
 #![feature(naked_functions)]
 #![no_std]
-
-#[macro_reexport(bkpt)]
-#[macro_use]
-extern crate cortex_m;
-#[cfg(feature = "semihosting")]
-#[macro_reexport(hprint, hprintln)]
-#[macro_use]
-extern crate cortex_m_semihosting;
-extern crate r0;
-
-#[macro_use]
-mod macros;
-
-mod lang_items;
 
 /// Copied from https://github.com/rust-lang/rust/blob/master/src/libstd/os/raw.rs
 pub mod ctypes {
@@ -39,8 +24,10 @@ pub mod ctypes {
     pub type c_ulonglong = u64;
     #[repr(u8)]
     pub enum c_void {
-        #[doc(hidden)] __variant1,
-        #[doc(hidden)] __variant2,
+        #[doc(hidden)]
+        __variant1,
+        #[doc(hidden)]
+        __variant2,
     }
 
     // Non-Windows
