@@ -1,27 +1,44 @@
-// Based on nRF5-sdk/examples/peripheral/blinky/main.c
-#![no_std]
 #![no_main]
-#![feature(asm)]
+#![no_std]
 
-#[macro_use]
+#[macro_use(entry, exception)]
+extern crate cortex_m_rt as rt;
+
+// makes `panic!` print messages to the host stderr using semihosting
+extern crate panic_semihosting;
+use rt::ExceptionFrame;
+
 extern crate nrf52dk_sys;
 use nrf52dk_sys as nrf;
 
-#[no_mangle]
-pub unsafe extern "C" fn main() {
-    nrf::bsp_board_leds_init();
-    nrf::check(nrf::nrf_log_init(None)).unwrap();
-    nrf::check(nrf::app_timer_init()).unwrap();
+entry!(main);
 
-    loop {
-        for led in 0..nrf::LEDS_NUMBER {
-            nrf::bsp_board_led_invert(led);
-            nrf::_nrf_delay_ms(500);
-            log_str("INFO: this is a test\r\n\x00");
-            nrf::sd_app_evt_wait();
-            process_log();
+fn main() -> ! {
+    unsafe {
+        nrf::bsp_board_leds_init();
+        nrf::check(nrf::nrf_log_init(None)).unwrap();
+        nrf::check(nrf::app_timer_init()).unwrap();
+
+        loop {
+            for led in 0..nrf::LEDS_NUMBER {
+                nrf::bsp_board_led_invert(led);
+                nrf::_nrf_delay_ms(500);
+                log_str("INFO: this is a test\r\n\x00");
+                nrf::sd_app_evt_wait();
+                process_log();
+            }
         }
     }
+}
+
+exception!(HardFault, hard_fault);
+fn hard_fault(ef: &ExceptionFrame) -> ! {
+    panic!("HardFault at {:#?}", ef);
+}
+
+exception!(*, default_handler);
+fn default_handler(irqn: i16) {
+    panic!("Unhandled exception (IRQn = {})", irqn);
 }
 
 unsafe fn process_log() {
@@ -37,17 +54,3 @@ unsafe fn process_log() {
 unsafe fn log_str(foo: &'static str) {
     nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_INFO as u8, foo.as_ptr());
 }
-
-// NRF_LOG_PROCESS()
-//     NRF_LOG_INTERNAL_PROCESS()
-//         nrf_log_frontend_dequeue()
-
-// NRF_LOG_INTERNAL_FLUSH
-
-// NRF_LOG_INFO
-//     NRF_LOG_INTERNAL_INFO( __VA_ARGS__)
-//         LOG_INTERNAL(NRF_LOG_LEVEL_INFO, LOG_INFO_PREFIX, __VA_ARGS__);
-//             LOG_INTERNAL_X(NUM_VA_ARGS_LESS_1( \
-//                            __VA_ARGS__), type, prefix, __VA_ARGS__)
-//                 CONCAT_2(LOG_INTERNAL_, N) (__VA_ARGS__)
-//                     nrf_log_frontend_std_0(type, prefix str)

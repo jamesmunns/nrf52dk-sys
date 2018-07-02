@@ -1,16 +1,29 @@
 extern crate gcc;
 
-use std::collections::{HashMap, HashSet};
 use gcc::Build;
+use std::collections::{HashMap, HashSet};
 
 use std::env;
-use std::path::PathBuf;
-use std::process::Command;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
+use std::process::Command;
 
 fn main() {
-    let outdir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out = PathBuf::from(env::var("OUT_DIR").unwrap());
+
+    // Put the linker script somewhere the linker can find it
+    File::create(out.join("memory.x"))
+        .unwrap()
+        .write_all(include_bytes!("memory.x"))
+        .unwrap();
+    println!("cargo:rustc-link-search={}", out.display());
+
+    // If any of these files/folders change, we should regenerate
+    //   the whole C + bindings component
+    println!("cargo:rerun-if-changed=memory.x");
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=bindings.h");
 
     // We're going to generate app_config.h from their feature
     // selection, so let's extract that from the env.
@@ -23,13 +36,7 @@ fn main() {
             }
         })
         .collect();
-
-    write_app_config(&outdir, &features);
-
-    // If any of these files/folders change, we should regenerate
-    //   the whole C + bindings component
-    println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=bindings.h");
+    write_app_config(&out, &features);
 
     let mut info = SdkInfo::default();
     info.add_from_path(&PathBuf::from("nRF5-sdk"));
@@ -42,15 +49,15 @@ fn main() {
         println!("cargo:rerun-if-changed={}", hdr.display());
     }
 
-    process_linker_file(&outdir);
-    generate_ble(&outdir, &info);
-    make_c_deps(&outdir, &info, &features);
+    // process_linker_file(&out);
+    generate_ble(&out, &info);
+    make_c_deps(&out, &info, &features);
 }
 
 /// Emit app_config.h based on the enabled features.  This is used
 /// to override things in sdk_config.h
-fn write_app_config(outdir: &PathBuf, features: &HashSet<String>) {
-    let mut app_config = File::create(outdir.join("app_config.h")).unwrap();
+fn write_app_config(out: &PathBuf, features: &HashSet<String>) {
+    let mut app_config = File::create(out.join("app_config.h")).unwrap();
     for feature in features.iter() {
         writeln!(app_config, "#define {}_ENABLED 1", feature).ok();
     }
@@ -97,27 +104,26 @@ impl SdkInfo {
     }
 }
 
-fn process_linker_file(out: &PathBuf) {
-    // Copy over the target specific linker script
-    File::create(out.join("nrf52dk-sys.ld"))
-        .unwrap()
-        .write_all(include_bytes!("nrf52dk-sys.ld"))
-        .unwrap();
+// fn process_linker_file(out: &PathBuf) {
+//     // Copy over the target specific linker script
+//     File::create(out.join("nrf52dk-sys.ld"))
+//         .unwrap()
+//         .write_all(include_bytes!("nrf52dk-sys.ld"))
+//         .unwrap();
 
-    // Also copy the nrf general linker script
-    File::create(out.join("nrf5x_common.ld"))
-        .unwrap()
-        .write_all(include_bytes!("nrf5x_common.ld"))
-        .unwrap();
+//     // Also copy the nrf general linker script
+//     File::create(out.join("nrf5x_common.ld"))
+//         .unwrap()
+//         .write_all(include_bytes!("nrf5x_common.ld"))
+//         .unwrap();
 
-    println!("cargo:rustc-link-search={}", out.display());
-}
+//     println!("cargo:rustc-link-search={}", out.display());
+// }
 
-
-fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
+fn make_c_deps(out: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
     let mut config = Build::new();
 
-    config.out_dir(out_path);
+    config.out_dir(out);
 
     for f in FLAGS {
         config.flag(f);
@@ -134,16 +140,16 @@ fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
         }
     }
 
-    // out_path is where we find the app_config.h that we generate
+    // out is where we find the app_config.h that we generate
     // from the enabled features
-    config.include(out_path);
+    config.include(out);
     for i in info.dirs.iter() {
         config.include(i);
     }
 
     config.compile("libnrf.a");
 
-    println!("cargo:rustc-link-search={}", out_path.display());
+    println!("cargo:rustc-link-search={}", out.display());
     println!("cargo:rustc-link-lib=static=nrf");
 }
 
@@ -180,9 +186,9 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("--ctypes-prefix=ctypes");
     cmd.arg("--with-derive-default");
     cmd.arg("--verbose");
-    cmd.arg("--blacklist-type"); 
+    cmd.arg("--blacklist-type");
     cmd.arg("IRQn_Type");
-    cmd.arg("--blacklist-type"); 
+    cmd.arg("--blacklist-type");
     cmd.arg("__va_list");
     // This type wraps a mutable void pointer, and we cannot safely impl Copy.
     cmd.arg("--output");
@@ -225,9 +231,7 @@ fn generate_ble(out: &PathBuf, info: &SdkInfo) {
     cmd.arg("-target");
     cmd.arg(env::var("TARGET").unwrap());
 
-    assert!(cmd.status()
-                .expect("failed to build BLE libs")
-                .success());
+    assert!(cmd.status().expect("failed to build BLE libs").success());
 }
 
 /// Build SRC_TO_FEAT into something using PathBufs
@@ -267,6 +271,7 @@ static FLAGS: &[&str] = &[
     "-mfpu=fpv4-sp-d16",
     "-ffunction-sections",
     "-fdata-sections",
+    "-fno-pic",
     "-fno-strict-aliasing",
     "-fno-builtin",
     // the headers are riddled with unused parameters and emit
@@ -274,6 +279,8 @@ static FLAGS: &[&str] = &[
     "-Wno-unused-parameter",
     "-Wno-sign-compare",
     "-Wno-missing-field-initializers",
+    "-Wno-expansion-to-defined",
+    "-Wimplicit-fallthrough=0",
     "--short-enums",
 ];
 
