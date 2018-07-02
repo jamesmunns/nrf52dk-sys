@@ -1,11 +1,10 @@
 // Based on nRF5-sdk/examples/peripheral/blinky/main.c
-
 #![no_main]
 #![no_std]
 
-extern crate cortex_m;
 #[macro_use(entry, exception)]
 extern crate cortex_m_rt as rt;
+
 // makes `panic!` print messages to the host stderr using semihosting
 extern crate panic_semihosting;
 use rt::ExceptionFrame;

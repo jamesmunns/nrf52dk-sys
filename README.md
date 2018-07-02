@@ -10,14 +10,12 @@ This project aims to be a reference on how to combine C and Rust components, in 
 
 This project requires the following tools before building:
 
-Tool                | Recommended Version   | Link/Install
-:---                | :------------------   | :---
-Clang               | 3.9                   | [debian/ubuntu](http://apt.llvm.org/) or [source](http://releases.llvm.org/download.html)
-arm-none-eabi-gcc   | 6.1                   | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)
-Rust (nightly)      | nightly-2017-11-15    | [rustup.rs](https://www.rustup.rs/)
-Rust source         | nightly-2017-11-15    | `rustup component add rust-src`
-Xargo               | 0.3.8                 | `cargo install xargo --vers 0.3.8`
-Bindgen             | 0.31.3                | `cargo install bindgen --vers 0.31.3`
+| Tool              | Recommended Version | Link/Install                                                                              |
+| :---------------- | :------------------ | :---------------------------------------------------------------------------------------- |
+| Clang             | 3.9                 | [debian/ubuntu](http://apt.llvm.org/) or [source](http://releases.llvm.org/download.html) |
+| arm-none-eabi-gcc | 6.1                 | [Current Version](https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads)   |
+| Rust (nightly)    | nightly-2017-11-15  | [rustup.rs](https://www.rustup.rs/)                                                       |
+| Bindgen           | 0.31.3              | `cargo install bindgen --vers 0.31.3`                                                     |
 
 If you would like more detailed installation instructions, please look at [The Detailed Setup Instructions](./SETUP.md).
 
@@ -25,17 +23,17 @@ If you use `docker`, please see the debian based [Dockerfile](./Dockerfile).
 
 Additionally, the following tools are required to run or debug the firmware:
 
-Tool        | Recommended Version   | Link/Install
----         | ---                   | ---
-SoftDevice  | S132-v4.0.2           | [Nordic Download](http://www.nordicsemi.com/eng/nordic/Products/nRF52832/S132-SD-v4/58803)
-JLink       | v6.16                 | [JLink Download](https://www.segger.com/downloads/jlink)
+| Tool       | Recommended Version | Link/Install                                                                               |
+| ---------- | ------------------- | ------------------------------------------------------------------------------------------ |
+| SoftDevice | S132-v4.0.2         | [Nordic Download](http://www.nordicsemi.com/eng/nordic/Products/nRF52832/S132-SD-v4/58803) |
+| JLink      | v6.16               | [JLink Download](https://www.segger.com/downloads/jlink)                                   |
 
 ## Building
 
 ```text
 git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
 cd nrf52dk-sys
-xargo build --example blinky
+cargo build --example blinky
       Compiling core v0.0.0 (file:///root/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/src/libcore)
        Finished release [optimized] target(s) in 14.8 secs
        Updating registry `https://github.com/rust-lang/crates.io-index`
@@ -113,7 +111,6 @@ JLinkGDBServer -device NRF52832_XXAA -if SWD -speed 4000
 # Connecting to target...Connected to target
 # Waiting for GDB connection...
 ```
-
 
 Then, in another terminal:
 

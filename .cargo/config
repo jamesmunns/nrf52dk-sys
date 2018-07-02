@@ -1,19 +1,22 @@
 
 [target.thumbv7em-none-eabihf]
 rustflags = [
-    "-C", "link-arg=-mthumb",
-    "-C", "link-arg=-Tnrf52dk-sys.ld",
+    # "-C", "link-arg=-Tlink.x",
+    "-C", "link-arg=-Tcustom.x",
+    # "-C", "link-arg=-Tmemory.x",
+
     "-C", "link-arg=-mcpu=cortex-m4",
-    "-C", "link-arg=--specs=nano.specs",
-
-    "-C", "link-arg=-Wl,--gc-sections",
-    "-C", "link-arg=-Wl,--start-group",
-    "-C", "link-arg=-Wl,--end-group",
-    "-C", "link-arg=-Wl,--build-id=none",
-
+    "-C", "link-arg=-mthumb",
     "-C", "link-arg=-mabi=aapcs",
     "-C", "link-arg=-mfloat-abi=hard",
     "-C", "link-arg=-mfpu=fpv4-sp-d16",
+
+    "-C", "link-arg=--specs=nano.specs",
+
+    # "-C", "link-arg=-Wl,--gc-sections",
+    # "-C", "link-arg=-Wl,--start-group",
+    # "-C", "link-arg=-Wl,--end-group",
+    # "-C", "link-arg=-Wl,--build-id=none",
 ]
 
 [build]
