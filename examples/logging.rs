@@ -1,14 +1,15 @@
 // Based on nRF5-sdk/examples/peripheral/blinky/main.c
 #![no_std]
 #![no_main]
-#![feature(asm)]
+
+extern crate panic_halt;
 
 #[macro_use]
-extern crate nrf52dk_sys;
 use nrf52dk_sys as nrf;
+use cortex_m_rt::entry;
 
-#[no_mangle]
-pub unsafe extern "C" fn main() {
+#[entry]
+unsafe fn main() -> ! {
     nrf::bsp_board_leds_init();
     nrf::check(nrf::nrf_log_init(None)).unwrap();
     nrf::check(nrf::app_timer_init()).unwrap();

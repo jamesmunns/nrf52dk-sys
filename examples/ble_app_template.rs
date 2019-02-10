@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
-#![feature(asm)]
 
+extern crate panic_halt;
 extern crate nrf52dk_sys;
 use nrf52dk_sys as nrf;
 use nrf::check;
-
+use cortex_m_rt::entry;
 static NAME: &str = "RUST-BLE";
 
 static mut EVENT_BUFFER: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
@@ -49,8 +49,8 @@ unsafe fn nrf_log_info(output: &'static str) {
     nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_INFO as u8, output.as_ptr());
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn main() {
+#[entry]
+unsafe fn main() -> ! {
     let mut erase_bonds = false;
 
     // BSP Init
@@ -253,7 +253,7 @@ unsafe fn peer_manager_init() {
 
     // Security parameters to be used for all security procedures.
     let mut sec_param = nrf::ble_gap_sec_params_t {
-        _bitfield_1: 0,
+        _bitfield_1: 0u8,
         min_key_size: 7,
         max_key_size: 16,
         kdist_own: kdist_own,

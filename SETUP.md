@@ -59,53 +59,43 @@ Note: After performing this step, you may need to open a new terminal window for
 
 ```bash
 curl https://sh.rustup.rs -sSf > install_rust.sh
-/bin/bash /install_rust.sh -y --default-toolchain nightly-2017-06-12
+/bin/bash /install_rust.sh -y
 ```
 
 ## 4b. Rustup already installed
 
-If you already have Rust installed via Rustup, you only need to install the correct toolchain version.
+If you already have Rust installed via Rustup, you only need to add corresponding target.
 
 ```bash
-rustup install nightly-2017-06-12
-rustup default nightly-2017-06-12
+rustup target add thumbv7em-none-eabihf
 ```
 
-## 5. Install Xargo and Bindgen
+## 5. Install Bindgen
 
-Xargo makes compiling embedded crates easier. Bindgen automatically generates Rust bindings from C/C++ code.
+Bindgen automatically generates Rust bindings from C/C++ code.
 
 ```bash
-cargo install xargo --vers 0.3.8
 cargo install bindgen --vers 0.31.3
 ```
 
-## 6. Install Rust Core Source
-
-It is necessary to rebuild the `core` component of Rust for our target. Don't worry, `xargo` takes care of this, we just need to provide it Rust's source code.
-
-```bash
-rustup component add rust-src
-```
-
-## 7. Download the `nrf52dk-sys` repo, and build an example
+## 6. Download the `nrf52dk-sys` repo, and build an example
 
 You made it! Now to verify the install went well, lets checkout the `nrf52dk-sys` crate, and build one of the examples.
 
 ```bash
 git clone --recursive https://github.com/jamesmunns/nrf52dk-sys
 cd nrf52dk-sys
-xargo build --example blinky
+cargo build --release --example blinky
 ```
 
 If everything went well, the last lines on your terminal should look like this:
 
 ```text
 Compiling nrf52dk-sys v0.1.1 (file:///nrf52dk-sys)
- Finished dev [unoptimized + debuginfo] target(s) in 25.48 secs
+ Finished dev [optimized + debuginfo] target(s) in xx.xx secs
 ```
 
-## 8. Install nRF52 specific components
+## 7. Install nRF52 specific components
 
 The above steps verify you can compile your firmware. Before interacting with actual hardware, you will need to download the following components. Instructions for what to do with these are on the [Main README](./README.md).
 
