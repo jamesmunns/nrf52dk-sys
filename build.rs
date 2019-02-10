@@ -1,7 +1,7 @@
-extern crate gcc;
+extern crate cc;
 
 use std::collections::{HashMap, HashSet};
-use gcc::Build;
+use cc::Build;
 
 use std::env;
 use std::path::PathBuf;
@@ -42,7 +42,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", hdr.display());
     }
 
-    process_linker_file(&outdir);
+    //process_linker_file(&outdir);
     generate_ble(&outdir, &info);
     make_c_deps(&outdir, &info, &features);
 }
@@ -97,23 +97,6 @@ impl SdkInfo {
     }
 }
 
-fn process_linker_file(out: &PathBuf) {
-    // Copy over the target specific linker script
-    File::create(out.join("nrf52dk-sys.ld"))
-        .unwrap()
-        .write_all(include_bytes!("nrf52dk-sys.ld"))
-        .unwrap();
-
-    // Also copy the nrf general linker script
-    File::create(out.join("nrf5x_common.ld"))
-        .unwrap()
-        .write_all(include_bytes!("nrf5x_common.ld"))
-        .unwrap();
-
-    println!("cargo:rustc-link-search={}", out.display());
-}
-
-
 fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
     let mut config = Build::new();
 
@@ -143,7 +126,7 @@ fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
 
     config.compile("libnrf.a");
 
-    println!("cargo:rustc-link-search={}", out_path.display());
+    println!("cargo:rustc-link-search=link.x");
     println!("cargo:rustc-link-lib=static=nrf");
 }
 
@@ -260,6 +243,7 @@ fn is_src_enabled(
 
 static FLAGS: &[&str] = &[
     "-std=c99",
+    "-g",
     "-mcpu=cortex-m4",
     "-mthumb",
     "-mabi=aapcs",
@@ -269,11 +253,13 @@ static FLAGS: &[&str] = &[
     "-fdata-sections",
     "-fno-strict-aliasing",
     "-fno-builtin",
-    // the headers are riddled with unused parameters and emit
-    // hundreds of warnings: suppress them.
     "-Wno-unused-parameter",
+    "-Wno-expansion-to-defined", // surpass storm of warnings
     "-Wno-sign-compare",
     "-Wno-missing-field-initializers",
+    "-fno-exceptions",
+    "-fno-pic",
+    "-nostartfiles",
     "--short-enums",
 ];
 

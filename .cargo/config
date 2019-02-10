@@ -1,8 +1,10 @@
-
 [target.thumbv7em-none-eabihf]
 rustflags = [
+    "-C", "linker=arm-none-eabi-gcc",
+    "-C", "link-arg=-nostartfiles",
+
     "-C", "link-arg=-mthumb",
-    "-C", "link-arg=-Tnrf52dk-sys.ld",
+    "-C", "link-arg=-Wl,-Tlink.x",
     "-C", "link-arg=-mcpu=cortex-m4",
     "-C", "link-arg=--specs=nano.specs",
 
@@ -18,4 +20,3 @@ rustflags = [
 
 [build]
 target = "thumbv7em-none-eabihf"
-incremental = false

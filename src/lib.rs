@@ -1,30 +1,10 @@
-//! Based on `cortex-m-template`
-//!
-//! https://github.com/japaric/cortex-m-template
-
 // #![deny(missing_docs)]
 #![allow(non_camel_case_types, non_snake_case, non_upper_case_globals)]
 // #![deny(warnings)]
-#![feature(asm)]
-#![feature(lang_items)]
-#![feature(linkage)]
-#![feature(macro_reexport)]
-#![feature(naked_functions)]
 #![no_std]
 
-#[macro_reexport(bkpt)]
-#[macro_use]
 extern crate cortex_m;
-#[cfg(feature = "semihosting")]
-#[macro_reexport(hprint, hprintln)]
-#[macro_use]
 extern crate cortex_m_semihosting;
-extern crate r0;
-
-#[macro_use]
-mod macros;
-
-mod lang_items;
 
 /// Copied from https://github.com/rust-lang/rust/blob/master/src/libstd/os/raw.rs
 pub mod ctypes {
