@@ -9,7 +9,7 @@ extern crate nrf52dk_sys;
 use nrf52dk_sys as nrf;
 
 #[entry]
-unsafe fn main() -> !{
+unsafe fn main() -> ! {
     nrf::bsp_board_leds_init();
 
     loop {

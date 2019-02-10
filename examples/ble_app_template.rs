@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
 extern crate nrf52dk_sys;
-use nrf52dk_sys as nrf;
-use nrf::check;
+extern crate panic_halt;
 use cortex_m_rt::entry;
+use nrf::check;
+use nrf52dk_sys as nrf;
 static NAME: &str = "RUST-BLE";
 
 static mut EVENT_BUFFER: [u8; 88] = [0; 88]; // 64 + 23 = 87, rounded up to next word
@@ -38,12 +38,10 @@ static mut M_GATT: nrf::nrf_ble_gatt_t = nrf::nrf_ble_gatt_t {
     evt_handler: None,
 };
 
-static mut M_ADV_UUIDS: [nrf::ble_uuid_t; 1] = [
-    nrf::ble_uuid_t {
-        uuid: nrf::BLE_UUID_DEVICE_INFORMATION_SERVICE as u16,
-        type_: nrf::BLE_UUID_TYPE_BLE as u8,
-    },
-];
+static mut M_ADV_UUIDS: [nrf::ble_uuid_t; 1] = [nrf::ble_uuid_t {
+    uuid: nrf::BLE_UUID_DEVICE_INFORMATION_SERVICE as u16,
+    type_: nrf::BLE_UUID_TYPE_BLE as u8,
+}];
 
 unsafe fn nrf_log_info(output: &'static str) {
     nrf::nrf_log_frontend_std_0(nrf::NRF_LOG_LEVEL_INFO as u8, output.as_ptr());
@@ -95,13 +93,13 @@ unsafe fn timers_init() {
 
 /// Function for initializing buttons and leds.
 unsafe fn buttons_leds_init(erase_bonds: &mut bool) {
-
     let mut startup_event: nrf::bsp_event_t = nrf::bsp_event_t_BSP_EVENT_NOTHING;
 
     check(nrf::bsp_init(
         nrf::BSP_INIT_LED | nrf::BSP_INIT_BUTTONS,
         Some(bsp_event_handler),
-    )).unwrap();
+    ))
+    .unwrap();
 
     check(nrf::bsp_btn_ble_init(None, &mut startup_event)).unwrap();
 
@@ -121,7 +119,8 @@ unsafe fn ble_stack_init() {
         EVENT_BUFFER.as_mut_ptr() as *mut nrf::ctypes::c_void,
         EVENT_BUFFER.len() as u16,
         None,
-    )).unwrap();
+    ))
+    .unwrap();
 
     // Fetch the start address of the application RAM.
     let mut ram_start = 0u32;
@@ -129,10 +128,12 @@ unsafe fn ble_stack_init() {
 
     // Overwrite some of the default configurations for the BLE stack.
     let mut ble_cfg = nrf::ble_cfg_t::default();
-    check(nrf::sd_ble_cfg_set(nrf::BLE_COMMON_CFGS_BLE_COMMON_CFG_VS_UUID as u32,
-                              &mut ble_cfg,
-                              ram_start))
-            .unwrap();
+    check(nrf::sd_ble_cfg_set(
+        nrf::BLE_COMMON_CFGS_BLE_COMMON_CFG_VS_UUID as u32,
+        &mut ble_cfg,
+        ram_start,
+    ))
+    .unwrap();
 
     // Configure the maximum number of connections.
     let mut ble_cfg = nrf::ble_cfg_t::default();
@@ -142,10 +143,12 @@ unsafe fn ble_stack_init() {
         central_sec_count: 0,
     };
 
-    check(nrf::sd_ble_cfg_set(nrf::BLE_GAP_CFGS_BLE_GAP_CFG_ROLE_COUNT as u32,
-                              &mut ble_cfg,
-                              ram_start))
-            .unwrap();
+    check(nrf::sd_ble_cfg_set(
+        nrf::BLE_GAP_CFGS_BLE_GAP_CFG_ROLE_COUNT as u32,
+        &mut ble_cfg,
+        ram_start,
+    ))
+    .unwrap();
 
     // Enable BLE stack.
     check(nrf::softdevice_enable(&mut ram_start)).unwrap();
@@ -172,7 +175,8 @@ unsafe fn gap_params_init() {
         &mut sec_mode,
         NAME.as_ptr(),
         NAME.len() as u16,
-    )).unwrap();
+    ))
+    .unwrap();
 
     //  YOUR_JOB: Use an appearance value matching the application's use case.
     //  err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
@@ -215,7 +219,8 @@ unsafe fn advertising_init() {
         &mut options,
         Some(on_adv_evt),
         None,
-    )).unwrap();
+    ))
+    .unwrap();
 }
 
 /// Function for initializing services that will be used by the application.
@@ -288,12 +293,14 @@ unsafe extern "C" fn bsp_event_handler(event: nrf::bsp_event_t) {
                 check(err_code).unwrap();
             }
         }
-        BSP_EVENT_WHITELIST_OFF => if M_CONN_HANDLE == nrf::BLE_CONN_HANDLE_INVALID as u16 {
-            let err_code = nrf::ble_advertising_restart_without_whitelist();
-            if err_code != nrf::NRF_ERROR_INVALID_STATE {
-                check(err_code).unwrap();
+        BSP_EVENT_WHITELIST_OFF => {
+            if M_CONN_HANDLE == nrf::BLE_CONN_HANDLE_INVALID as u16 {
+                let err_code = nrf::ble_advertising_restart_without_whitelist();
+                if err_code != nrf::NRF_ERROR_INVALID_STATE {
+                    check(err_code).unwrap();
+                }
             }
-        },
+        }
         _ => {}
     };
 }
@@ -310,9 +317,9 @@ unsafe extern "C" fn ble_evt_dispatch(p_ble_evt: *mut nrf::ble_evt_t) {
     nrf::nrf_ble_gatt_on_ble_evt(&mut M_GATT, p_ble_evt);
 
     /*YOUR_JOB add calls to _on_ble_evt functions from each service your application is using
-       ble_xxs_on_ble_evt(&m_xxs, p_ble_evt);
-       ble_yys_on_ble_evt(&m_yys, p_ble_evt);
-     */
+      ble_xxs_on_ble_evt(&m_xxs, p_ble_evt);
+      ble_yys_on_ble_evt(&m_yys, p_ble_evt);
+    */
 }
 
 /// Function for dispatching a system event to interested modules.
@@ -328,10 +335,12 @@ unsafe extern "C" fn sys_evt_dispatch(evt_id: u32) {
 }
 
 unsafe extern "C" fn on_adv_evt(ble_adv_evt: nrf::ble_adv_evt_t) {
-
     match ble_adv_evt {
         BLE_ADV_EVT_FAST => {
-            check(nrf::bsp_indication_set(nrf::bsp_indication_t_BSP_INDICATE_ADVERTISING)).unwrap();
+            check(nrf::bsp_indication_set(
+                nrf::bsp_indication_t_BSP_INDICATE_ADVERTISING,
+            ))
+            .unwrap();
         }
         BLE_ADV_EVT_IDLE => {
             sleep_mode_enter();
@@ -341,13 +350,13 @@ unsafe extern "C" fn on_adv_evt(ble_adv_evt: nrf::ble_adv_evt_t) {
 }
 
 unsafe extern "C" fn on_conn_params_evt(p_evt: *mut nrf::ble_conn_params_evt_t) {
-
     match (*p_evt).evt_type {
         BLE_CONN_PARAMS_EVT_FAILED => {
             check(nrf::sd_ble_gap_disconnect(
                 M_CONN_HANDLE,
                 nrf::BLE_HCI_CONN_INTERVAL_UNACCEPTABLE as u8,
-            )).unwrap();
+            ))
+            .unwrap();
         }
         _ => {}
     }
@@ -360,7 +369,8 @@ unsafe extern "C" fn conn_params_error_handler(nrf_error: u32) {
 unsafe fn sleep_mode_enter() {
     check(nrf::bsp_indication_set(
         nrf::bsp_indication_t_BSP_INDICATE_IDLE,
-    )).unwrap();
+    ))
+    .unwrap();
 
     check(nrf::bsp_btn_ble_sleep_mode_prepare()).unwrap();
 
@@ -373,7 +383,10 @@ unsafe fn advertising_start(erase_bonds: bool) {
         delete_bonds();
     // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED evetnt
     } else {
-        check(nrf::ble_advertising_start(nrf::ble_adv_mode_t_BLE_ADV_MODE_FAST)).unwrap();
+        check(nrf::ble_advertising_start(
+            nrf::ble_adv_mode_t_BLE_ADV_MODE_FAST,
+        ))
+        .unwrap();
     }
 }
 
@@ -384,7 +397,6 @@ unsafe fn delete_bonds() {
 }
 
 unsafe extern "C" fn pm_evt_handler(p_evt: *const nrf::pm_evt_t) {
-
     match (*p_evt).evt_id {
         PM_EVT_BONDED_PEER_CONNECTED => {
             nrf_log_info("Connected to a previously bonded device.\r\n\0");
@@ -460,43 +472,52 @@ unsafe extern "C" fn pm_evt_handler(p_evt: *const nrf::pm_evt_t) {
 
 /// Function for handling the Application's BLE Stack events.
 unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
-
     let x = (*p_ble_evt).header.evt_id;
 
     // We can't use a match here because the nordic mixes enum types :(
     if x == nrf::BLE_GAP_EVTS_BLE_GAP_EVT_DISCONNECTED as u16 {
         nrf_log_info("Disconnected.\r\n\0");
 
-        check(nrf::bsp_indication_set(nrf::bsp_indication_t_BSP_INDICATE_IDLE)).unwrap();
+        check(nrf::bsp_indication_set(
+            nrf::bsp_indication_t_BSP_INDICATE_IDLE,
+        ))
+        .unwrap();
     } else if x == nrf::BLE_GAP_EVTS_BLE_GAP_EVT_CONNECTED as u16 {
         nrf_log_info("Connected.\r\n\0");
-        check(nrf::bsp_indication_set(nrf::bsp_indication_t_BSP_INDICATE_CONNECTED)).unwrap();
+        check(nrf::bsp_indication_set(
+            nrf::bsp_indication_t_BSP_INDICATE_CONNECTED,
+        ))
+        .unwrap();
         M_CONN_HANDLE = (*p_ble_evt).evt.gap_evt.conn_handle;
     } else if x == nrf::BLE_GATTC_EVTS_BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.conn_handle,
-                                         nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
-                .unwrap();
+        check(nrf::sd_ble_gap_disconnect(
+            (*p_ble_evt).evt.gattc_evt.conn_handle,
+            nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8,
+        ))
+        .unwrap();
     } else if x == nrf::BLE_GATTC_EVTS_BLE_GATTC_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Client Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gattc_evt.conn_handle,
-                                         nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
-                .unwrap();
+        check(nrf::sd_ble_gap_disconnect(
+            (*p_ble_evt).evt.gattc_evt.conn_handle,
+            nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8,
+        ))
+        .unwrap();
     } else if x == nrf::BLE_GATTS_EVTS_BLE_GATTS_EVT_TIMEOUT as u16 {
         nrf_log_info("GATT Server Timeout.\r\n\0");
-        check(nrf::sd_ble_gap_disconnect((*p_ble_evt).evt.gatts_evt.conn_handle,
-                                         nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8))
-                .unwrap();
+        check(nrf::sd_ble_gap_disconnect(
+            (*p_ble_evt).evt.gatts_evt.conn_handle,
+            nrf::BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION as u8,
+        ))
+        .unwrap();
     } else if x == nrf::BLE_COMMON_EVTS_BLE_EVT_USER_MEM_REQUEST as u16 {
-        check(nrf::sd_ble_user_mem_reply((*p_ble_evt).evt.gattc_evt.conn_handle,
-                                         core::ptr::null()))
-                .unwrap();
+        check(nrf::sd_ble_user_mem_reply(
+            (*p_ble_evt).evt.gattc_evt.conn_handle,
+            core::ptr::null(),
+        ))
+        .unwrap();
     } else if x == nrf::BLE_GATTS_EVTS_BLE_GATTS_EVT_RW_AUTHORIZE_REQUEST as u16 {
-        let req = (*p_ble_evt)
-            .evt
-            .gatts_evt
-            .params
-            .authorize_request;
+        let req = (*p_ble_evt).evt.gatts_evt.params.authorize_request;
 
         if req.type_ != nrf::BLE_GATTS_AUTHORIZE_TYPE_INVALID as u8 {
             let op = req.request.write.op;
@@ -517,7 +538,8 @@ unsafe fn on_ble_evt(p_ble_evt: *mut nrf::ble_evt_t) {
                 check(nrf::sd_ble_gatts_rw_authorize_reply(
                     (*p_ble_evt).evt.gatts_evt.conn_handle,
                     &auth_reply,
-                )).unwrap();
+                ))
+                .unwrap();
             }
         }
     } else {

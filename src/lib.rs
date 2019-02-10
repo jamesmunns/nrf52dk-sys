@@ -19,8 +19,10 @@ pub mod ctypes {
     pub type c_ulonglong = u64;
     #[repr(u8)]
     pub enum c_void {
-        #[doc(hidden)] __variant1,
-        #[doc(hidden)] __variant2,
+        #[doc(hidden)]
+        __variant1,
+        #[doc(hidden)]
+        __variant2,
     }
 
     // Non-Windows
