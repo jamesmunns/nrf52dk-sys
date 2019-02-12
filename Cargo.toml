@@ -23,7 +23,7 @@ debug = true # symbols are nice and they don't increase the size on Flash
 lto = true # better optimizations
 
 [features]
-default = ["APP_SCHEDULER","APP_TIMER","BLE_ADVERTISING","BUTTON","CLOCK","CRC16","FDS","FSTORAGE","GPIOTE","NRF_BLE_GATT","NRF_LOG","NRF_STRERROR","PEER_MANAGER","UART","UART0"]
+default = ["APP_SCHEDULER","APP_TIMER","BLE_ADVERTISING","BUTTON","CLOCK","CRC16","FDS","GPIOTE","NRF_BLE_GATT","NRF_LOG","NRF_STRERROR","PEER_MANAGER","UART","UART0"]
 APP_GPIOTE = []
 APP_PWM = []
 APP_SCHEDULER = []
@@ -71,7 +71,6 @@ CRC32 = []
 ECC = []
 EGU = []
 FDS = []
-FSTORAGE = []
 GPIOTE = []
 HARDFAULT_HANDLER = []
 HCI_MEM_POOL = []

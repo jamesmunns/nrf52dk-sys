@@ -555,8 +555,8 @@ ret_code_t softdevice_app_ram_start_get(uint32_t * app_ram_base)
     extern uint32_t __ICFEDIT_region_RAM_start__;
     volatile uint32_t ram_start = (uint32_t) &__ICFEDIT_region_RAM_start__;
 #elif defined ( __GNUC__ )
-    extern uint32_t __data_start__;
-    volatile uint32_t ram_start = (uint32_t) &__data_start__;
+    extern uint32_t __sdata;
+    volatile uint32_t ram_start = (uint32_t) &__sdata;
 #else
   ret = NRF_ERROR_NOT_FOUND;
   return ret;

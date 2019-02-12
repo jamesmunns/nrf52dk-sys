@@ -42,7 +42,6 @@ fn main() {
         println!("cargo:rerun-if-changed={}", hdr.display());
     }
 
-    //process_linker_file(&outdir);
     generate_ble(&outdir, &info);
     make_c_deps(&outdir, &info, &features);
 }
