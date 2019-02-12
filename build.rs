@@ -42,6 +42,7 @@ fn main() {
         println!("cargo:rerun-if-changed={}", hdr.display());
     }
 
+    process_linker_file(&outdir);
     generate_ble(&outdir, &info);
     make_c_deps(&outdir, &info, &features);
 }
@@ -94,6 +95,16 @@ impl SdkInfo {
             }
         }
     }
+}
+
+fn process_linker_file(out: &PathBuf) {
+    // Copy over the target specific linker script
+    File::create(out.join("device.x"))
+        .unwrap()
+        .write_all(include_bytes!("device.x"))
+        .unwrap();
+
+    println!("cargo:rustc-link-search=device.x");
 }
 
 fn make_c_deps(out_path: &PathBuf, info: &SdkInfo, features: &HashSet<String>) {
