@@ -1,4 +1,7 @@
 /* Linker script for the nRF52832_xxAA - WITH SOFT DEVICE */
+SEARCH_DIR(.)
+GROUP(AS_NEEDED(-lgcc -lc -lnosys))
+
 MEMORY
 {
   /* NOTE K = KiBi = 1024 bytes */
@@ -170,6 +173,8 @@ SECTIONS
 
   /* Place the heap right after `.bss` */
   __sheap = ADDR(.bss) + SIZEOF(.bss);
+
+  PROVIDE(end = __sheap);
 
   /* Stack usage metadata emitted by LLVM */
   .stack_sizes (INFO) :

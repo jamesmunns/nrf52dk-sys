@@ -4,16 +4,12 @@ rustflags = [
     "-C", "link-arg=-nostartfiles",
 
     "-C", "link-arg=-mthumb",
-   # "-C", "link-arg=-specs=nano.specs",
-    #"-C", "link-arg=-specs=nosys.specs",
+    # "-C", "link-arg=-specs=nano.specs",
+    "-C", "link-arg=-specs=nosys.specs",
     "-C", "link-arg=-Wl,-Tdevice.x",
     "-C", "link-arg=-mcpu=cortex-m4",
 
-    "-C", "link-arg=-Wl,-lgcc",
-    "-C", "link-arg=-Wl,-lc",
     "-C", "link-arg=-Wl,--gc-sections",
-    "-C", "link-arg=-Wl,--start-group",
-    "-C", "link-arg=-Wl,--end-group",
     "-C", "link-arg=-Wl,--build-id=none",
 
     "-C", "link-arg=-mabi=aapcs",
